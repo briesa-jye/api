@@ -5,6 +5,9 @@ import { ApiError, errorBody } from "./errors.ts";
 import { hasScope, hashKey, hashesEqual, parseKey } from "./keys.ts";
 import { MemoryRateLimiter, type RateLimiter } from "./ratelimit.ts";
 import { monthOf } from "./month.ts";
+import { PackRegistry } from "@briesa/packs";
+import { assessRoutes } from "./routes/assess.ts";
+import { packRoutes } from "./routes/packs.ts";
 import { keyRoutes } from "./routes/keys.ts";
 import { metaRoutes } from "./routes/meta.ts";
 
@@ -29,6 +32,7 @@ declare module "fastify" {
 export interface AppOptions {
   store: Store;
   rateLimiter?: RateLimiter;
+  packs?: PackRegistry;
   logger?: boolean;
 }
 
@@ -145,6 +149,9 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
   );
 
   await app.register(metaRoutes, { store });
+  const packs = opts.packs ?? PackRegistry.empty();
   await app.register(keyRoutes, { store });
+  await app.register(packRoutes, { packs });
+  await app.register(assessRoutes, { packs, store });
   return app;
 }

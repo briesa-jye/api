@@ -15,6 +15,16 @@ Defaults chosen by the build, as agreed with Jye. Change any of these before pro
 | Idempotency | Stored per tenant + key with request hash; key-minting routes opt out because responses contain secrets | |
 | Pricing / licence tiers | Not decided | Pack `licence tier` will be an unused field until you decide. |
 
+## Phase 2 decisions
+- **Rule conditions** are a closed JSON/YAML vocabulary (`all/any/not` plus 11 comparison ops). No expressions, no `eval`.
+- **Outcome aggregation**: highest outcome of any matched rule, using the order declared per scenario type in `pack.yaml`.
+- **`needs_review` and retired rules never affect an outcome.** Matching `needs_review` rules are surfaced as `rules_pending_review` and force `human_review_recommended`.
+- **`human_review_recommended`** is true unless the pack is `verified`, nothing escalated and no unapplied rule matched.
+- **Evaluation date** is the current date in Australia/Sydney.
+- **Output schemas** are not per-pack; the response shape is fixed by the platform (only the outcome vocabulary is pack-defined).
+- Unlicensed packs return 404, not 403, so pack ids aren't enumerable.
+- Packs load once at startup; `rules.updated` / `pack.updated` webhooks and hot reload come with webhooks.
+
 ## Phase 1 limitations
 - `MemoryStore` backs the running server; `prisma/schema.prisma` is written and validates but there is no `PrismaStore` yet and no migration has been run (needs a database).
 - There is no way yet to create the first tenant and key outside tests (needs the Prisma store plus a provisioning script).
