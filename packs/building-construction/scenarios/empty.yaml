@@ -1,0 +1,10 @@
+# Synthetic fixture: structure only, not regulatory content.
+id: empty-pack-default
+synthetic: true
+scenario_type: general
+jurisdiction: AU
+as_of: "2026-01-01"
+inputs: {}
+expect:
+  outcome: no_action_identified
+  escalation_recommended: false

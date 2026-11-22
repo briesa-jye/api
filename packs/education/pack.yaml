@@ -1,0 +1,17 @@
+id: education
+name: education
+industry: education
+regulators: []
+jurisdictions: [AU]
+version: 0.1.0
+status: draft
+maintainers: [unassigned]
+licence_tier: standard
+reviewer: null
+scenario_types:
+  general:
+    description: General assessment (replace with real scenario types)
+    input_schema: schemas/general.input.json
+    outcome:
+      order: [no_action_identified]
+      default: no_action_identified

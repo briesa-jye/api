@@ -1,0 +1,6 @@
+{
+  "name": "@briesa/cli",
+  "private": true,
+  "type": "module",
+  "dependencies": { "@briesa/packs": "workspace:*" }
+}
