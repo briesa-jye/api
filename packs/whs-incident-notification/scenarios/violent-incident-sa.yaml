@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). Amendment-only incident type.
+id: violent-incident-sa
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: SA
+as_of: "2026-11-22"
+inputs: {"incident_type": "violent_incident", "arose_from_work": true}
+expect: {"outcome": "needs_information", "escalation_recommended": true, "action_ids": ["confirm-local-adoption-with-regulator"], "reason_rule_ids": ["december-2025-amendments-not-yet-law"]}

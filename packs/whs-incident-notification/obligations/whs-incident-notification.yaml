@@ -1,0 +1,27 @@
+- id: notify-regulator-immediately
+  title: Notify the WHS regulator of a notifiable incident immediately
+  description: A person conducting a business or undertaking must notify the WHS regulator immediately after becoming aware of a workplace death, serious injury or illness, or dangerous incident arising from work. Notifications go directly to the state, territory or Commonwealth regulator; Safe Work Australia does not receive them.
+  applies_to: [pcbu]
+  jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
+  deadline: Immediately after becoming aware
+  source: { instrument: "Model WHS Act Part 3 (Safe Work Australia: Incident reporting)", url: "https://www.safeworkaustralia.gov.au/duties-tool/construction/duties-information/incident-reporting", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active
+- id: preserve-incident-site
+  title: Preserve the incident site
+  description: Preserve the site until an inspector arrives or directs otherwise. This does not prevent helping an injured person, removing a deceased person, making the site safe or assisting a police investigation.
+  applies_to: [pcbu]
+  jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
+  deadline: Until an inspector arrives or directs otherwise
+  source: { instrument: "Model WHS Act Part 3 (Safe Work Australia: Incident reporting; Health care code of practice)", url: "https://www.safeworkaustralia.gov.au/book/health-care-and-social-assistance/managing-whs-risks/incident-notification", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active
+- id: keep-construction-risk-records
+  title: Keep risk assessment, WHS management plan and SWMS copies after a notifiable incident (construction)
+  description: In construction, keep a copy of the risk assessment, WHS management plan and/or Safe Work Method Statement for two years after a notifiable incident.
+  applies_to: [construction_pcbu]
+  jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
+  deadline: 2 years after the incident
+  source: { instrument: "Model WHS Regulations Part 11.3 (Safe Work Australia: Incident reporting, construction duties information)", url: "https://www.safeworkaustralia.gov.au/duties-tool/construction/duties-information/incident-reporting", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active

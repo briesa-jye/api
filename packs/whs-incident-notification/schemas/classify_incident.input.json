@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["incident_type", "arose_from_work"],
+  "properties": {
+    "incident_type": {
+      "enum": ["death", "injury_or_illness", "dangerous_incident", "violent_incident", "suicide_or_attempt", "extended_absence", "other"],
+      "description": "Category of the incident as described by the caller. violent_incident, suicide_or_attempt and extended_absence relate to the December 2025 model amendments, which apply only where adopted locally."
+    },
+    "arose_from_work": { "type": "boolean", "description": "The incident happened as a result of work (arising from the conduct of the business or undertaking)." },
+    "serious_injury_criteria_met": { "enum": ["yes", "no", "unknown"], "description": "For injury_or_illness: the caller has checked the injury or illness against the statutory serious injury or illness criteria for the jurisdiction. This pack does not encode the criteria." },
+    "serious_risk_exposed": { "enum": ["yes", "no", "unknown"], "description": "For dangerous_incident: the incident exposed a person to a serious risk to health or safety, checked against the statutory dangerous incident criteria. This pack does not encode the criteria." }
+  }
+}

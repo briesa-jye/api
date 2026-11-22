@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). Injury meeting the serious criteria (as stated).
+id: injury-serious-sa
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: SA
+as_of: "2026-11-22"
+inputs: {"incident_type": "injury_or_illness", "arose_from_work": true, "serious_injury_criteria_met": "yes"}
+expect: {"outcome": "notifiable", "escalation_recommended": true, "action_ids": ["notify-regulator-immediately", "preserve-incident-site", "call-000-if-immediate-risk", "notify-safework-sa"], "reason_rule_ids": ["notifiable-incident", "regulator-sa"]}

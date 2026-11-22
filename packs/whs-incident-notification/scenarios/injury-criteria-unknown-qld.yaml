@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). Injury, criteria not checked.
+id: injury-criteria-unknown-qld
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: QLD
+as_of: "2026-11-22"
+inputs: {"incident_type": "injury_or_illness", "arose_from_work": true, "serious_injury_criteria_met": "unknown"}
+expect: {"outcome": "needs_information", "escalation_recommended": true, "action_ids": ["check-serious-injury-criteria"], "reason_rule_ids": ["injury-criteria-unknown"], "missing_paths": ["serious_injury_criteria_met"]}

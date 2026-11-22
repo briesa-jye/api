@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). Death not arising from work.
+id: death-not-work-related
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: NSW
+as_of: "2026-11-22"
+inputs: {"incident_type": "death", "arose_from_work": false}
+expect: {"outcome": "not_notifiable", "escalation_recommended": false, "action_ids": [], "reason_rule_ids": ["not-work-related"]}

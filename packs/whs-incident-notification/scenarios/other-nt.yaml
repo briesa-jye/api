@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). Unclassified incident.
+id: other-nt
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: NT
+as_of: "2026-11-22"
+inputs: {"incident_type": "other", "arose_from_work": true}
+expect: {"outcome": "needs_information", "escalation_recommended": true, "action_ids": ["contact-regulator-for-advice"], "reason_rule_ids": ["unclassified-incident"]}

@@ -1,0 +1,214 @@
+- id: notifiable-incident
+  version: 1.0.0
+  title: "Notifiable incident: notify the WHS regulator immediately and preserve the site"
+  description: "A death, a serious injury or illness, or a dangerous incident that exposes someone to a serious risk, arising from work, is a notifiable incident. The duty holder must notify the regulator immediately after becoming aware and preserve the incident site."
+  jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
+  when: &notifiable { any: [
+        { all: [ { path: incident_type, op: eq, value: death }, { path: arose_from_work, op: eq, value: true } ] },
+        { all: [ { path: incident_type, op: eq, value: injury_or_illness }, { path: arose_from_work, op: eq, value: true }, { path: serious_injury_criteria_met, op: eq, value: 'yes' } ] },
+        { all: [ { path: incident_type, op: eq, value: dangerous_incident }, { path: arose_from_work, op: eq, value: true }, { path: serious_risk_exposed, op: eq, value: 'yes' } ] } ] }
+  then: 
+    outcome: notifiable
+    escalate: true
+    required_actions:
+      - { id: notify-regulator-immediately, description: "Notify the WHS regulator immediately after becoming aware of the incident. A person in the business, not this API, makes the notification." }
+      - { id: preserve-incident-site, description: "Preserve the incident site until an inspector arrives or directs otherwise. This does not prevent helping an injured person, removing a deceased person, making the site safe or assisting a police investigation." }
+      - { id: call-000-if-immediate-risk, description: "Call 000 if there is an immediate risk to life." }
+    reason: The reported facts match a notifiable incident category.
+  source: { instrument: "Model WHS Act Part 3 (Safe Work Australia: Incident reporting, construction duties information)", url: "https://www.safeworkaustralia.gov.au/duties-tool/construction/duties-information/incident-reporting", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active
+
+- id: not-work-related
+  version: 1.0.0
+  title: "Not notifiable: incident did not arise from work"
+  description: "An incident is only a notifiable incident if it happens as a result of work."
+  jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
+  when: { path: arose_from_work, op: eq, value: false }
+  then: { outcome: not_notifiable, reason: "The caller states the incident did not arise from work. A qualified person should confirm." }
+  source: { instrument: "Safe Work Australia: Model code of practice, Health care and social assistance industry, Incident notification", section: "notifiable incident only if it happens as a result of work", url: "https://www.safeworkaustralia.gov.au/book/health-care-and-social-assistance/managing-whs-risks/incident-notification", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active
+
+- id: injury-criteria-not-met
+  version: 1.0.0
+  title: "Injury or illness does not meet the serious criteria (as stated by the caller)"
+  description: "Only a serious injury or illness is notifiable."
+  jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
+  when: { all: [ { path: incident_type, op: eq, value: injury_or_illness }, { path: arose_from_work, op: eq, value: true }, { path: serious_injury_criteria_met, op: eq, value: 'no' } ] }
+  then: { outcome: not_notifiable, reason: "The caller states the serious injury or illness criteria are not met. This pack does not check the criteria." }
+  source: { instrument: "Model WHS Act Part 3 (Safe Work Australia: Incident reporting, construction duties information)", url: "https://www.safeworkaustralia.gov.au/duties-tool/construction/duties-information/incident-reporting", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active
+
+- id: injury-criteria-unknown
+  version: 1.0.0
+  title: "Injury or illness: serious criteria not yet checked"
+  description: "Whether the injury or illness is a notifiable serious injury or illness must be determined against the statutory criteria for the jurisdiction."
+  jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
+  when: { all: [ { path: incident_type, op: eq, value: injury_or_illness }, { path: arose_from_work, op: eq, value: true }, { path: serious_injury_criteria_met, op: eq, value: unknown } ] }
+  then: 
+    outcome: needs_information
+    escalate: true
+    required_actions: [{ id: check-serious-injury-criteria, description: "Check the injury or illness against the serious injury or illness criteria using your WHS regulator's guidance; if in doubt contact the regulator." }]
+    missing_information: [{ path: serious_injury_criteria_met, description: Whether the statutory serious injury or illness criteria are met }]
+  source: { instrument: "Model WHS Act Part 3 (Safe Work Australia: Incident reporting, construction duties information)", url: "https://www.safeworkaustralia.gov.au/duties-tool/construction/duties-information/incident-reporting", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active
+
+- id: dangerous-incident-not-serious
+  version: 1.0.0
+  title: "Dangerous incident does not expose anyone to serious risk (as stated by the caller)"
+  description: "Only a dangerous incident that exposes a person to a serious risk is notifiable."
+  jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
+  when: { all: [ { path: incident_type, op: eq, value: dangerous_incident }, { path: arose_from_work, op: eq, value: true }, { path: serious_risk_exposed, op: eq, value: 'no' } ] }
+  then: { outcome: not_notifiable, reason: "The caller states no one was exposed to a serious risk. This pack does not check the dangerous incident criteria." }
+  source: { instrument: "Model WHS Act Part 3 (Safe Work Australia: Incident reporting, construction duties information)", url: "https://www.safeworkaustralia.gov.au/duties-tool/construction/duties-information/incident-reporting", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active
+
+- id: dangerous-incident-risk-unknown
+  version: 1.0.0
+  title: "Dangerous incident: serious risk not yet assessed"
+  description: "Near misses can be notifiable if they expose someone to a serious risk, even if no one is injured."
+  jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
+  when: { all: [ { path: incident_type, op: eq, value: dangerous_incident }, { path: arose_from_work, op: eq, value: true }, { path: serious_risk_exposed, op: eq, value: unknown } ] }
+  then: 
+    outcome: needs_information
+    escalate: true
+    required_actions: [{ id: assess-dangerous-incident-criteria, description: "Assess the incident against the dangerous incident criteria using your WHS regulator's guidance; if in doubt contact the regulator." }]
+    missing_information: [{ path: serious_risk_exposed, description: Whether anyone was exposed to a serious risk }]
+  source: { instrument: "Model WHS Act Part 3 (Safe Work Australia: Incident reporting, construction duties information)", url: "https://www.safeworkaustralia.gov.au/duties-tool/construction/duties-information/incident-reporting", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active
+
+- id: unclassified-incident
+  version: 1.0.0
+  title: "Incident type not classified"
+  description: "The incident does not fall in the categories this pack encodes. A person must decide whether it is notifiable."
+  jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
+  when: { all: [ { path: incident_type, op: eq, value: other }, { path: arose_from_work, op: eq, value: true } ] }
+  then: 
+    outcome: needs_information
+    escalate: true
+    required_actions: [{ id: contact-regulator-for-advice, description: Contact your WHS regulator for advice on whether the incident is notifiable. }]
+  source: { instrument: "Safe Work Australia: Incident notification - Reporting an incident", section: "regulator contact details", url: "https://www.safeworkaustralia.gov.au/safety-topic/managing-health-and-safety/incident-notification/reporting-incident", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active
+
+- id: december-2025-amendments-not-yet-law
+  version: 1.0.0
+  title: "Incident type covered by the December 2025 model amendments"
+  description: "Violent incidents, work-related suicide or attempted suicide, and extended absences are notifiable under the amended model WHS Act, but those changes apply only once adopted into local WHS laws and each jurisdiction sets its own timeline."
+  jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
+  when: { all: [ { path: incident_type, op: in, value: [violent_incident, suicide_or_attempt, extended_absence] }, { path: arose_from_work, op: eq, value: true } ] }
+  then: 
+    outcome: needs_information
+    escalate: true
+    required_actions: [{ id: confirm-local-adoption-with-regulator, description: "Check with your WHS regulator whether the model amendments for this incident type have been adopted locally and whether it must be notified." }]
+    reason: Safe Work Australia says the amended notification duties take legal effect only once adopted into local WHS laws. This pack does not know the adoption status.
+  source: { instrument: "Safe Work Australia: Incident notification requirements under the model WHS Act", section: "changes apply only once adopted into local WHS laws", url: "https://www.safeworkaustralia.gov.au/safety-topic/managing-health-and-safety/incident-notification/incident-notification-requirements-under-model-whs-act", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active
+
+- id: victoria-not-encoded
+  version: 1.0.0
+  title: "Victoria: requirements not encoded in this pack"
+  description: "This pack's rules are based on Safe Work Australia's description of the model WHS laws. It has not encoded Victorian requirements."
+  jurisdictions: [VIC]
+  when: { path: arose_from_work, op: exists }
+  then: 
+    outcome: needs_information
+    escalate: true
+    required_actions: [{ id: contact-worksafe-victoria, description: "Contact WorkSafe Victoria on 1800 136 089 (worksafe.vic.gov.au) to confirm whether and how to notify." }]
+    reason: Victorian notification requirements are not encoded in this version of the pack.
+  source: { instrument: "Safe Work Australia: Incident notification - Reporting an incident", section: "regulator contact details", url: "https://www.safeworkaustralia.gov.au/safety-topic/managing-health-and-safety/incident-notification/reporting-incident", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active
+
+- id: regulator-nsw
+  version: 1.0.0
+  title: "Notify SafeWork NSW"
+  description: "Where an incident is notifiable in NSW, notifications go directly to SafeWork NSW."
+  jurisdictions: [NSW]
+  when: *notifiable
+  then: { required_actions: [{ id: notify-safework-nsw, description: "Notify SafeWork NSW on 13 10 50 (safework.nsw.gov.au)." }] }
+  source: { instrument: "Safe Work Australia: Incident notification - Reporting an incident", section: "regulator contact details", url: "https://www.safeworkaustralia.gov.au/safety-topic/managing-health-and-safety/incident-notification/reporting-incident", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active
+
+- id: regulator-qld
+  version: 1.0.0
+  title: "Notify WorkSafe Queensland"
+  description: "Where an incident is notifiable in QLD, notifications go directly to WorkSafe Queensland."
+  jurisdictions: [QLD]
+  when: *notifiable
+  then: { required_actions: [{ id: notify-worksafe-queensland, description: "Notify WorkSafe Queensland on 1300 362 128 (worksafe.qld.gov.au)." }] }
+  source: { instrument: "Safe Work Australia: Incident notification - Reporting an incident", section: "regulator contact details", url: "https://www.safeworkaustralia.gov.au/safety-topic/managing-health-and-safety/incident-notification/reporting-incident", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active
+
+- id: regulator-sa
+  version: 1.0.0
+  title: "Notify SafeWork SA"
+  description: "Where an incident is notifiable in SA, notifications go directly to SafeWork SA."
+  jurisdictions: [SA]
+  when: *notifiable
+  then: { required_actions: [{ id: notify-safework-sa, description: "Notify SafeWork SA on 1300 365 255 (safework.sa.gov.au)." }] }
+  source: { instrument: "Safe Work Australia: Incident notification - Reporting an incident", section: "regulator contact details", url: "https://www.safeworkaustralia.gov.au/safety-topic/managing-health-and-safety/incident-notification/reporting-incident", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active
+
+- id: regulator-wa
+  version: 1.0.0
+  title: "Notify WorkSafe WA"
+  description: "Where an incident is notifiable in WA, notifications go directly to WorkSafe WA."
+  jurisdictions: [WA]
+  when: *notifiable
+  then: { required_actions: [{ id: notify-worksafe-wa, description: "Notify WorkSafe WA on 1300 307 877 (worksafe.wa.gov.au)." }] }
+  source: { instrument: "Safe Work Australia: Incident notification - Reporting an incident", section: "regulator contact details", url: "https://www.safeworkaustralia.gov.au/safety-topic/managing-health-and-safety/incident-notification/reporting-incident", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active
+
+- id: regulator-act
+  version: 1.0.0
+  title: "Notify WorkSafe ACT"
+  description: "Where an incident is notifiable in ACT, notifications go directly to WorkSafe ACT."
+  jurisdictions: [ACT]
+  when: *notifiable
+  then: { required_actions: [{ id: notify-worksafe-act, description: "Notify WorkSafe ACT on 02 6207 1923 (worksafe.act.gov.au)." }] }
+  source: { instrument: "Safe Work Australia: Incident notification - Reporting an incident", section: "regulator contact details", url: "https://www.safeworkaustralia.gov.au/safety-topic/managing-health-and-safety/incident-notification/reporting-incident", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active
+
+- id: regulator-tas
+  version: 1.0.0
+  title: "Notify WorkSafe Tasmania"
+  description: "Where an incident is notifiable in TAS, notifications go directly to WorkSafe Tasmania."
+  jurisdictions: [TAS]
+  when: *notifiable
+  then: { required_actions: [{ id: notify-worksafe-tasmania, description: "Notify WorkSafe Tasmania on 1300 366 322 (Tas) or (03) 6166 4600 (external) (worksafe.tas.gov.au)." }] }
+  source: { instrument: "Safe Work Australia: Incident notification - Reporting an incident", section: "regulator contact details", url: "https://www.safeworkaustralia.gov.au/safety-topic/managing-health-and-safety/incident-notification/reporting-incident", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active
+
+- id: regulator-nt
+  version: 1.0.0
+  title: "Notify NT WorkSafe"
+  description: "Where an incident is notifiable in NT, notifications go directly to NT WorkSafe."
+  jurisdictions: [NT]
+  when: *notifiable
+  then: { required_actions: [{ id: notify-nt-worksafe, description: "Notify NT WorkSafe on 1800 019 115 (worksafe.nt.gov.au)." }] }
+  source: { instrument: "Safe Work Australia: Incident notification - Reporting an incident", section: "regulator contact details", url: "https://www.safeworkaustralia.gov.au/safety-topic/managing-health-and-safety/incident-notification/reporting-incident", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active
+
+- id: written-notice-followup
+  version: 1.0.0
+  title: Written notice of the incident may be required after the immediate notification (unverified)
+  description: Model WHS laws are understood to allow the regulator to require written notice. The timeframe and wording have not been read from a primary source for this pack.
+  jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
+  when: *notifiable
+  then: { required_actions: [{ id: written-notice-if-requested, description: Be ready to provide written notice if the regulator requests it. }] }
+  effective_from: "2020-01-01"
+  status: needs_review

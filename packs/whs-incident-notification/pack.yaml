@@ -1,0 +1,17 @@
+id: whs-incident-notification
+name: WHS incident notification
+industry: work-health-and-safety
+regulators: [SafeWork NSW, WorkSafe Victoria, WorkSafe Queensland, SafeWork SA, WorkSafe WA, WorkSafe ACT, WorkSafe Tasmania, NT WorkSafe]
+jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, VIC, WA]
+version: 0.1.0
+status: draft
+maintainers: [Briesa]
+licence_tier: standard
+reviewer: null
+scenario_types:
+  classify_incident:
+    description: Classify a workplace incident and say whether it is notifiable to the WHS regulator, and what to do
+    input_schema: schemas/classify_incident.input.json
+    outcome:
+      order: [not_notifiable, needs_information, notifiable]
+      default: not_notifiable

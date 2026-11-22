@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). Victoria is not encoded.
+id: victoria-not-encoded
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: VIC
+as_of: "2026-11-22"
+inputs: {"incident_type": "death", "arose_from_work": true}
+expect: {"outcome": "needs_information", "escalation_recommended": true, "action_ids": ["contact-worksafe-victoria"], "reason_rule_ids": ["victoria-not-encoded"]}

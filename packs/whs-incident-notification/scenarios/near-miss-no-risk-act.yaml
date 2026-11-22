@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). Near miss with no serious risk (as stated).
+id: near-miss-no-risk-act
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: ACT
+as_of: "2026-11-22"
+inputs: {"incident_type": "dangerous_incident", "arose_from_work": true, "serious_risk_exposed": "no"}
+expect: {"outcome": "not_notifiable", "action_ids": [], "reason_rule_ids": ["dangerous-incident-not-serious"]}
