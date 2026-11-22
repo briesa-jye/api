@@ -59,6 +59,7 @@ export class PrismaStore implements Store {
       return { ...again, created: false };
     }
   }
+  async releaseStripeEvent(eventId: string) { await this.db.stripeEvent.deleteMany({ where: { id: eventId } }); }
   async claimStripeEvent(eventId: string) {
     try { await this.db.stripeEvent.create({ data: { id: eventId } }); return true; }
     catch (e) { if (isUnique(e)) return false; throw e; }

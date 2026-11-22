@@ -172,6 +172,8 @@ for (const f of storeFactories) {
       expect(await store.claimStripeEvent("evt_1")).toBe(true);
       expect(await store.claimStripeEvent("evt_1")).toBe(false);
       expect(await store.claimStripeEvent("evt_2")).toBe(true);
+      await store.releaseStripeEvent("evt_1");
+      expect(await store.claimStripeEvent("evt_1")).toBe(true); // released events can be claimed again
     });
 
     it("erasure: removes one tenant's assessment data and nothing else", async () => {

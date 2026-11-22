@@ -17,9 +17,11 @@ export interface Tenant {
   /** Pack ids the subscription licenses, or ["*"] for all. Ignored for billingExempt tenants and for test keys. */
   licensedPacks: string[];
   currentPeriodEnd: Date | null;
+  /** Stripe event time of the last billing update applied (ordering guard for webhooks). */
+  billingEventAt: Date | null;
 }
 
-export type TenantBillingPatch = Partial<Pick<Tenant, "stripeCustomerId" | "subscriptionStatus" | "subscriptionId" | "planId" | "licensedPacks" | "currentPeriodEnd" | "billingExempt">>;
+export type TenantBillingPatch = Partial<Pick<Tenant, "stripeCustomerId" | "subscriptionStatus" | "subscriptionId" | "planId" | "licensedPacks" | "currentPeriodEnd" | "billingExempt" | "billingEventAt">>;
 
 /** A dashboard user (Supabase Auth user id) and the tenant they manage. */
 export interface TenantMember {
@@ -136,6 +138,8 @@ export interface Store {
   ensureTenantForUser(input: { userId: string; email: string; tenantName: string }): Promise<{ member: TenantMember; tenant: Tenant; created: boolean }>;
   /** True the first time an event id is seen, false for replays. */
   claimStripeEvent(eventId: string): Promise<boolean>;
+  /** Un-claims an event whose processing failed, so Stripe's retry is processed instead of being dropped as a duplicate. */
+  releaseStripeEvent(eventId: string): Promise<void>;
   getTenant(tenantId: string): Promise<Tenant | null>;
   setTenantRetention(tenantId: string, retentionDays: number): Promise<boolean>;
   /**

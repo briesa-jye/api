@@ -20,6 +20,8 @@ model Tenant {
   planId             String?
   licensedPacks      String[]            @default([])
   currentPeriodEnd   DateTime?
+  // Stripe event time of the last billing update applied, so out-of-order webhook deliveries cannot roll state back.
+  billingEventAt     DateTime?
   keys               ApiKey[]
   usage              UsageEvent[]
   audits             AuditRecord[]

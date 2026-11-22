@@ -17,7 +17,7 @@ export class MemoryStore implements Store {
     const t: Tenant = {
       id: randomUUID(), name: input.name, retentionDays: input.retentionDays ?? 365, createdAt: new Date(),
       billingExempt: input.billingExempt ?? false, stripeCustomerId: null, subscriptionStatus: "none",
-      subscriptionId: null, planId: null, licensedPacks: [], currentPeriodEnd: null,
+      subscriptionId: null, planId: null, licensedPacks: [], currentPeriodEnd: null, billingEventAt: null,
     };
     this.tenants.set(t.id, t);
     return t;
@@ -48,13 +48,14 @@ export class MemoryStore implements Store {
     if (found) return { member: found, tenant: this.tenants.get(found.tenantId)!, created: false };
     const tenant: Tenant = {
       id: randomUUID(), name: input.tenantName, retentionDays: 365, createdAt: new Date(), billingExempt: false,
-      stripeCustomerId: null, subscriptionStatus: "none", subscriptionId: null, planId: null, licensedPacks: [], currentPeriodEnd: null,
+      stripeCustomerId: null, subscriptionStatus: "none", subscriptionId: null, planId: null, licensedPacks: [], currentPeriodEnd: null, billingEventAt: null,
     };
     this.tenants.set(tenant.id, tenant);
     const member: TenantMember = { id: randomUUID(), tenantId: tenant.id, userId: input.userId, email: input.email, role: "owner", createdAt: new Date() };
     this.members.push(member);
     return { member, tenant, created: true };
   }
+  async releaseStripeEvent(eventId: string) { this.stripeEvents.delete(eventId); }
   async claimStripeEvent(eventId: string) {
     if (this.stripeEvents.has(eventId)) return false;
     this.stripeEvents.add(eventId);

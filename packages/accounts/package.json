@@ -8,7 +8,9 @@
     "./ssrf": "./src/ssrf.ts",
     "./sign": "./src/sign.ts",
     "./manage": "./src/manage.ts",
-    "./billing": "./src/billing.ts"
+    "./billing": "./src/billing.ts",
+    "./plans": "./src/plans.ts",
+    "./stripe-events": "./src/stripe-events.ts"
   },
   "dependencies": {
     "@briesa/db": "workspace:*",
