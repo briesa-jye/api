@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { FINISHED_DELIVERY_TTL_MS, IDEMPOTENCY_TTL_MS } from "./types.ts";
 import type {
   ApiKeyRecord, AuditRecord, IdempotencyRecord, Store, Tenant, UsageEvent, UsageSummaryRow,
-  WebhookDelivery, WebhookEndpoint, WebhookEvent,
+  WebhookDelivery, WebhookEndpoint, WebhookEvent, PurgeResult,
 } from "./types.ts";
 
 /** In-memory Store for tests and local dev. Same contract as PrismaStore. */
@@ -21,8 +22,35 @@ export class MemoryStore implements Store {
     return t;
   }
   async getTenant(id: string) { return this.tenants.get(id) ?? null; }
+  async setTenantRetention(tenantId: string, retentionDays: number) {
+    const t = this.tenants.get(tenantId);
+    if (!t) return false;
+    t.retentionDays = retentionDays;
+    return true;
+  }
+  async purgeExpired(now: Date): Promise<PurgeResult> {
+    const r = { audit: 0, idempotency: 0, deliveries: 0 };
+    const keepAudit = this.audits.filter((a) => {
+      const days = this.tenants.get(a.tenantId)?.retentionDays ?? 365;
+      return a.createdAt.getTime() >= now.getTime() - days * 86_400_000;
+    });
+    r.audit = this.audits.length - keepAudit.length; this.audits = keepAudit;
+    const keepIdem = this.idem.filter((i) => i.createdAt.getTime() >= now.getTime() - IDEMPOTENCY_TTL_MS);
+    r.idempotency = this.idem.length - keepIdem.length; this.idem = keepIdem;
+    const keepDel = this.deliveries.filter((d) => d.status === "pending" || d.createdAt.getTime() >= now.getTime() - FINISHED_DELIVERY_TTL_MS);
+    r.deliveries = this.deliveries.length - keepDel.length; this.deliveries = keepDel;
+    return r;
+  }
+  async eraseTenantData(tenantId: string): Promise<PurgeResult> {
+    const before = { audit: this.audits.length, idempotency: this.idem.length, deliveries: this.deliveries.length };
+    this.audits = this.audits.filter((a) => a.tenantId !== tenantId);
+    this.idem = this.idem.filter((i) => i.tenantId !== tenantId);
+    this.deliveries = this.deliveries.filter((d) => d.tenantId !== tenantId);
+    return { audit: before.audit - this.audits.length, idempotency: before.idempotency - this.idem.length, deliveries: before.deliveries - this.deliveries.length };
+  }
 
   async createApiKey(input: Omit<ApiKeyRecord, "id" | "createdAt" | "revokedAt">) {
+    if ([...this.keys.values()].some((x) => x.prefix === input.prefix)) throw new Error("duplicate key prefix"); // mirrors the database unique constraint
     const k: ApiKeyRecord = { ...input, id: randomUUID(), createdAt: new Date(), revokedAt: null };
     this.keys.set(k.id, k);
     return k;
@@ -63,7 +91,7 @@ export class MemoryStore implements Store {
   }
 
   async getIdempotency(tenantId: string, key: string) {
-    return this.idem.find((r) => r.tenantId === tenantId && r.key === key) ?? null;
+    return this.idem.find((r) => r.tenantId === tenantId && r.key === key && r.createdAt.getTime() > Date.now() - IDEMPOTENCY_TTL_MS) ?? null;
   }
   async saveIdempotency(r: Omit<IdempotencyRecord, "createdAt">) {
     this.idem.push({ ...r, createdAt: new Date() });

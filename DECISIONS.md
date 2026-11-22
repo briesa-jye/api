@@ -25,6 +25,16 @@ Defaults chosen by the build, as agreed with Jye. Change any of these before pro
 - Unlicensed packs return 404, not 403, so pack ids aren't enumerable.
 - Packs load once at startup; `rules.updated` / `pack.updated` webhooks and hot reload come with webhooks.
 
+## Phase 5 decisions (persistence)
+- `PrismaStore` (Postgres via `@prisma/adapter-pg`) implements the same `Store` contract as `MemoryStore`. One contract test suite runs against both; the Prisma side runs on **PGlite** (real Postgres compiled to WASM) using the project's actual migration SQL. It has **not** been run against a hosted Postgres or through the production `pg` driver, and `prisma migrate deploy` has not been run (no database was available).
+- Migrations: `0001_init` is generated from the schema; `0002_audit_immutability` is hand-written. A trigger makes `AuditRecord` immutable: UPDATE is always rejected and DELETE is rejected unless the transaction sets `briesa.retention = 'on'`, which only the retention job and tenant erasure do. This holds even against raw SQL.
+- Foreign keys tie every tenant-owned table to `Tenant` (restrict on delete).
+- Retention: audit records are purged per tenant `retentionDays` (default 365), idempotency records after 24 h, finished webhook deliveries after 30 days; runs hourly when a database is configured. `eraseTenantData` removes a tenant's audit, idempotency and delivery rows but keeps keys, endpoints and usage counts (billing). Full tenant deletion is not implemented.
+- Webhook delivery claiming uses `FOR UPDATE SKIP LOCKED` with a 5-minute lease, so several workers can run safely.
+- Raw SQL timestamps are explicit about UTC, so a non-UTC database session cannot shift retention or retry times (tested).
+- Provisioning: `pnpm tenant:create --name ... --packs a,b|all` creates a tenant with one test and one live key (standard scopes plus pack scopes) and prints them once. There is no HTTP admin API for creating tenants; that is deliberate for now.
+- With `DATABASE_URL` unset the server uses the in-memory store with a dev tenant, and still refuses to start when `NODE_ENV=production`.
+
 ## Phase 4 decisions
 - **Webhook delivery uses a database-backed outbox with a polling worker, not BullMQ.** Deliveries are rows with `nextAttemptAt`; a worker claims due rows with a lease. It survives restarts, needs no Redis, and is simpler to reason about at this scale. This deviates from the plan; BullMQ can replace the poller later without changing the API. Redis is still needed for a multi-instance rate limiter.
 - Retry schedule: 1 min, 5 min, 30 min, 2 h, 12 h (6 attempts), 10 s timeout, redirects not followed, destination re-resolved at send time to block private addresses (SSRF).
@@ -48,5 +58,5 @@ Defaults chosen by the build, as agreed with Jye. Change any of these before pro
 - Rule files may use YAML anchors to share a condition between rules in one file.
 
 ## Phase 1 limitations
-- `MemoryStore` backs the running server; `prisma/schema.prisma` is written and validates but there is no `PrismaStore` yet and no migration has been run (needs a database).
-- Tenants and keys can only be created by the dev bootstrap in `apps/api/src/main.ts` or in tests (needs the Prisma store plus a provisioning script).
+- Superseded in phase 5: a `PrismaStore` and migrations now exist (see above).
+- Superseded in phase 5: `pnpm tenant:create` provisions tenants.

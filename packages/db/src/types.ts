@@ -55,6 +55,11 @@ export interface IdempotencyRecord {
   createdAt: Date;
 }
 
+export const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
+export const FINISHED_DELIVERY_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+export interface PurgeResult { audit: number; idempotency: number; deliveries: number }
+
 export interface UsageSummaryRow {
   packId: string | null;
   endpoint: string;
@@ -100,6 +105,17 @@ export interface WebhookDelivery {
 export interface Store {
   createTenant(input: { name: string; retentionDays?: number }): Promise<Tenant>;
   getTenant(tenantId: string): Promise<Tenant | null>;
+  setTenantRetention(tenantId: string, retentionDays: number): Promise<boolean>;
+  /**
+   * Retention job. Deletes audit records older than each tenant's retentionDays, idempotency records older than
+   * IDEMPOTENCY_TTL_MS, and finished webhook deliveries older than FINISHED_DELIVERY_TTL_MS.
+   */
+  purgeExpired(now: Date): Promise<PurgeResult>;
+  /**
+   * Right to erasure: removes a tenant's audit records, idempotency records and webhook deliveries.
+   * Keeps the tenant, keys, endpoints and usage counts (billing records contain no assessment data).
+   */
+  eraseTenantData(tenantId: string): Promise<PurgeResult>;
 
   createApiKey(input: Omit<ApiKeyRecord, "id" | "createdAt" | "revokedAt">): Promise<ApiKeyRecord>;
   findApiKeyByPrefix(prefix: string): Promise<ApiKeyRecord | null>;

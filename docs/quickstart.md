@@ -2,7 +2,7 @@
 
 Get a key, make a first assessment, and get notified when rules change. About five minutes.
 
-> **Status:** this is a development build. There is no hosted environment, and no persistent database yet: the server keeps everything in memory and prints throwaway `test` and `live` keys when it starts. Both shipped real packs (`real-estate-aml`, `whs-incident-notification`) are `draft`: useful for integration, **not** production-ready. Every response tells you the pack status.
+> **Status:** this is a development build with no hosted environment. Without `DATABASE_URL` the server keeps everything in memory and prints throwaway `test` and `live` keys when it starts; with a database, create a tenant and keys using `pnpm tenant:create` (see the README). Both shipped real packs (`real-estate-aml`, `whs-incident-notification`) are `draft`: useful for integration, **not** production-ready. Every response tells you the pack status.
 
 ## 1. Run it
 

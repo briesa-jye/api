@@ -8,11 +8,16 @@ datasource db {
 }
 
 model Tenant {
-  id            String   @id @default(cuid())
+  id            String              @id @default(cuid())
   name          String
-  retentionDays Int      @default(365)
-  createdAt     DateTime @default(now())
+  retentionDays Int                 @default(365)
+  createdAt     DateTime            @default(now())
   keys          ApiKey[]
+  usage         UsageEvent[]
+  audits        AuditRecord[]
+  idempotency   IdempotencyRecord[]
+  endpoints     WebhookEndpoint[]
+  deliveries    WebhookDelivery[]
 }
 
 model ApiKey {
@@ -35,6 +40,7 @@ model ApiKey {
 model UsageEvent {
   id        String   @id @default(cuid())
   tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
   keyId     String
   packId    String?
   endpoint  String
@@ -50,6 +56,7 @@ model AuditRecord {
   id           String   @id @default(cuid())
   requestId    String
   tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
   keyId        String
   endpoint     String
   packId       String?
@@ -67,6 +74,7 @@ model AuditRecord {
 model IdempotencyRecord {
   id           String   @id @default(cuid())
   tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
   key          String
   requestHash  String
   status       Int
@@ -77,30 +85,34 @@ model IdempotencyRecord {
 }
 
 model WebhookEndpoint {
-  id         String    @id @default(cuid())
+  id         String            @id @default(cuid())
   tenantId   String
+  tenant     Tenant            @relation(fields: [tenantId], references: [id])
   url        String
   events     String[]
   packs      String[]
   secret     String // TODO: encrypt at rest (needed in plaintext to sign)
-  createdAt  DateTime  @default(now())
+  createdAt  DateTime          @default(now())
   disabledAt DateTime?
+  deliveries WebhookDelivery[]
 
   @@index([tenantId])
 }
 
 model WebhookDelivery {
-  id             String    @id @default(cuid())
+  id             String          @id @default(cuid())
   tenantId       String
+  tenant         Tenant          @relation(fields: [tenantId], references: [id])
   endpointId     String
+  endpoint       WebhookEndpoint @relation(fields: [endpointId], references: [id])
   event          String
   payload        String
   status         String // pending | succeeded | failed
-  attempts       Int       @default(0)
+  attempts       Int             @default(0)
   lastStatusCode Int?
   lastError      String?
   nextAttemptAt  DateTime?
-  createdAt      DateTime  @default(now())
+  createdAt      DateTime        @default(now())
   deliveredAt    DateTime?
 
   @@index([status, nextAttemptAt])

@@ -9,7 +9,10 @@
     "dev": "pnpm --filter @briesa/api dev",
     "pack:validate": "node cli/pack-validate.ts",
     "pack:new": "node cli/pack-new.ts",
-    "docs:generate": "node scripts/generate-docs.ts"
+    "docs:generate": "node scripts/generate-docs.ts",
+    "tenant:create": "node scripts/provision.ts",
+    "db:migrate": "pnpm --filter @briesa/db exec prisma migrate deploy",
+    "db:generate": "pnpm --filter @briesa/db exec prisma generate"
   },
   "devDependencies": {
     "@briesa/ai": "workspace:*",
@@ -17,8 +20,11 @@
     "@briesa/db": "workspace:*",
     "@briesa/engine": "workspace:*",
     "@briesa/packs": "workspace:*",
+    "@electric-sql/pglite": "^0.5.17",
+    "@prisma/client": "^6.19.3",
     "@scalar/openapi-parser": "^0.29.26",
     "@types/node": "^24",
+    "pglite-prisma-adapter": "^0.7.2",
     "typescript": "^5.9",
     "vitest": "^3"
   }
