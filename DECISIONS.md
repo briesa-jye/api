@@ -25,6 +25,15 @@ Defaults chosen by the build, as agreed with Jye. Change any of these before pro
 - Unlicensed packs return 404, not 403, so pack ids aren't enumerable.
 - Packs load once at startup; `rules.updated` / `pack.updated` webhooks and hot reload come with webhooks.
 
+## Phase 3 decisions
+- Both real packs are `draft` with no reviewer, not `beta`: they were compiled from regulator guidance pages by the build, with no human expert review. Only `verified` is production-ready.
+- Pack rules cite regulator guidance pages (AUSTRAC, Safe Work Australia) with retrieval dates, not the legislation text, which could not be read in this session. See `RULES_TO_VERIFY.md`.
+- Where a statutory test is not encoded (serious injury list, dangerous incident list, whether a real estate activity is a designated service), the pack takes the caller's answer as an input and escalates when it is `unknown`. It never guesses.
+- `real-estate-aml` outcome `hold_pending_cdd` is the highest outcome: required initial CDD matters are not yet established, so the service must not start (subject to delayed CDD, not encoded). The reasons list still shows any enhanced-CDD triggers.
+- Rules are effective from 2026-07-01 (AUSTRAC's stated commencement). Assessments dated earlier return `not_in_scope`.
+- `whs-incident-notification` applies model-based rules to ACT, NSW, NT, QLD, SA, TAS and WA; Victoria returns `needs_information` and a pointer to WorkSafe Victoria. Commonwealth (Comcare) workplaces are not covered because the platform has no Commonwealth jurisdiction code.
+- Rule files may use YAML anchors to share a condition between rules in one file.
+
 ## Phase 1 limitations
 - `MemoryStore` backs the running server; `prisma/schema.prisma` is written and validates but there is no `PrismaStore` yet and no migration has been run (needs a database).
 - There is no way yet to create the first tenant and key outside tests (needs the Prisma store plus a provisioning script).
