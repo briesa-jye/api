@@ -96,3 +96,32 @@ export async function openPortal() {
   const s = await getStripe().billingPortal.sessions.create({ customer: tenant.stripeCustomerId, return_url: `${SITE_URL}/dashboard/billing` });
   redirect(s.url);
 }
+
+// ---------- Playground ----------
+
+export type PlaygroundResult =
+  | { ok: true; core: import("@briesa/packs/assessment").AssessmentCore; request: { pack: string; scenario_type: string; jurisdiction: string; inputs: Record<string, unknown> } }
+  | { ok: false; message: string }
+  | null;
+
+/** Runs the same assessment code as POST /v1/assess, in-process. Not billed, not stored, no webhooks. */
+export async function runPlaygroundAction(_: PlaygroundResult, form: FormData): Promise<PlaygroundResult> {
+  await requireAccount();
+  const { assessPack } = await import("@briesa/packs/assessment");
+  const { buildInputs } = await import("@/lib/schema-fields");
+  const { playgroundCatalog } = await import("@/lib/playground");
+  const { getRegistry } = await import("@/lib/packs");
+
+  const packId = String(form.get("pack") ?? ""), scenarioId = String(form.get("scenario") ?? ""), jurisdiction = String(form.get("jurisdiction") ?? "");
+  const entry = playgroundCatalog().find((p) => p.id === packId)?.scenarios.find((s) => s.id === scenarioId);
+  const pack = getRegistry().get(packId);
+  if (!entry || !pack) return { ok: false, message: "Choose a pack and scenario." };
+
+  // Fields come from the pack's own schema on the server, never from the browser.
+  const values: Record<string, string> = {};
+  for (const f of entry.fields) values[f.path] = String(form.get(`f:${f.path}`) ?? "");
+  const inputs = buildInputs(entry.fields, values);
+  const out = assessPack(pack, { scenarioType: scenarioId, jurisdiction, inputs });
+  if (!out.ok) return { ok: false, message: out.code === "invalid_inputs" ? `Check the form: ${out.message}` : out.message };
+  return { ok: true, core: out.core, request: { pack: packId, scenario_type: scenarioId, jurisdiction, inputs } };
+}

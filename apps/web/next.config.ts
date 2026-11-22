@@ -2,6 +2,8 @@ import { resolve } from "node:path";
 import type { NextConfig } from "next";
 
 const config: NextConfig = {
+  // Lets a second dev server (e.g. a demo preview) run alongside the main one.
+  distDir: process.env.NEXT_DIST_DIR ?? ".next",
   // The app reads packs/ and docs/ from the repo root at runtime, so trace from the monorepo root and ship them.
   outputFileTracingRoot: resolve(import.meta.dirname, "../.."),
   outputFileTracingIncludes: { "/*": ["../../packs/**/*", "../../docs/**/*"] },

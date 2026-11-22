@@ -6,3 +6,4 @@ export * from "./validate.ts";
 export * from "./registry.ts";
 export * from "./scaffold.ts";
 export * from "./diff.ts";
+export * from "./assessment.ts";

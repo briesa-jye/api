@@ -2,17 +2,14 @@ import { createHash } from "node:crypto";
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { JURISDICTIONS } from "@briesa/engine";
-import { runPack, validateInputs, type PackRegistry } from "@briesa/packs";
+import { assessPack, DISCLAIMER, type PackRegistry } from "@briesa/packs";
 import type { Store } from "@briesa/db";
 import { factsForModel, generateAiNotes, type AiClient } from "@briesa/ai";
 import { ApiError } from "../errors.ts";
 import { hasPackAccess } from "../keys.ts";
-import { todayAU } from "../month.ts";
 import type { WebhookService } from "../webhooks/service.ts";
 
-export const DISCLAIMER =
-  "Decision-support only. This is an AI-assisted assessment of the information supplied, not legal advice. " +
-  "A qualified person must review it and remains responsible for compliance decisions.";
+export { DISCLAIMER };
 
 export const assessBody = z.strictObject({
   pack: z.string().min(1),
@@ -39,19 +36,11 @@ export const assessRoutes: FastifyPluginAsync<{ packs: PackRegistry; store: Stor
       throw new ApiError("not_found_error", "pack_not_found", "No such pack.");
     }
     const m = pack.manifest;
-    if (!m.scenario_types[b.scenario_type]) {
-      throw new ApiError("invalid_request_error", "unknown_scenario_type", `Unknown scenario_type. Available: ${Object.keys(m.scenario_types).join(", ")}.`);
-    }
-    if (!m.jurisdictions.includes("AU") && !m.jurisdictions.includes(b.jurisdiction)) {
-      throw new ApiError("invalid_request_error", "unsupported_jurisdiction", `Pack does not cover ${b.jurisdiction}.`);
-    }
-    const v = validateInputs(pack, b.scenario_type, b.inputs);
-    if (!v.ok) {
-      throw new ApiError("invalid_request_error", "invalid_inputs", v.errors.map((e) => `${e.path} ${e.message}`).join("; "));
-    }
+    const out = assessPack(pack, { scenarioType: b.scenario_type, jurisdiction: b.jurisdiction, inputs: b.inputs });
+    if (!out.ok) throw new ApiError("invalid_request_error", out.code, out.message);
     req.packId = b.pack;
+    const r = out.result;
 
-    const r = runPack(pack, { scenarioType: b.scenario_type, jurisdiction: b.jurisdiction, inputs: b.inputs, asOf: todayAU() });
     // Optional AI-assisted notes. Opt-in, never changes the deterministic result, falls back to null on any failure.
     let aiNotes: { label: string; model: string; notes: string[]; edge_cases: string[]; questions: string[] } | null = null;
     let aiStatus: "not_requested" | "ok" | "unavailable" | "timeout" | "error" | "invalid_output" = "not_requested";
@@ -72,18 +61,17 @@ export const assessRoutes: FastifyPluginAsync<{ packs: PackRegistry; store: Stor
     }
 
     const response = {
-      outcome: r.outcome,
-      required_actions: r.required_actions,
-      missing_information: r.missing_information,
-      escalation_recommended: r.escalation_recommended,
-      reasons: r.reasons,
-      rules_pending_review: r.rules_pending_review,
+      outcome: out.core.outcome,
+      required_actions: out.core.required_actions,
+      missing_information: out.core.missing_information,
+      escalation_recommended: out.core.escalation_recommended,
+      reasons: out.core.reasons,
+      rules_pending_review: out.core.rules_pending_review,
       ai_assisted_notes: aiNotes,
       ai_status: aiStatus,
-      pack: { id: m.id, version: m.version, status: m.status },
-      disclaimer: DISCLAIMER,
-      // Anything short of a verified pack, any escalation, or any unapplied needs_review match calls for a human.
-      human_review_recommended: m.status !== "verified" || r.escalation_recommended || r.rules_pending_review.length > 0,
+      pack: out.core.pack,
+      disclaimer: out.core.disclaimer,
+      human_review_recommended: out.core.human_review_recommended,
       test_mode: req.auth!.mode === "test",
       request_id: req.id,
     };
