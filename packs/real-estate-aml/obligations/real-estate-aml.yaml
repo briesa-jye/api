@@ -1,0 +1,56 @@
+- id: initial-cdd-before-service
+  title: Complete initial customer due diligence before providing the designated service
+  description: Establish the required initial CDD matters on reasonable grounds before starting to provide the service. If they cannot be established the service must not start, unless delayed initial CDD applies.
+  applies_to: [real_estate_professional]
+  jurisdictions: [AU]
+  deadline: Before the designated service starts
+  source: { instrument: "AML/CTF Act 2006 s 28; AUSTRAC guidance: Overview of initial customer due diligence", section: "ss 28, 136-141", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/customer-due-diligence/initial-customer-due-diligence/overview-initial-customer-due-diligence", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+- id: enhanced-cdd
+  title: Apply enhanced customer due diligence in the circumstances the Act specifies
+  description: Required where ML/TF risk is high, an SMR is required and the service continues, transactions are unusual, large or complex, foreign PEPs are involved, or a person is present in or formed in an FATF call-for-action jurisdiction.
+  applies_to: [real_estate_professional]
+  jurisdictions: [AU]
+  source: { instrument: "AML/CTF Act 2006 s 32; AUSTRAC guidance: Enhanced customer due diligence", section: "s 32; Rules s 6-20", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/customer-due-diligence/enhanced-customer-due-diligence", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+- id: submit-smr
+  title: Submit a suspicious matter report when required
+  description: Within 24 hours of forming the suspicion if related to terrorism financing, otherwise within 3 business days after the day the suspicion formed (up to 5 business days where legal professional privilege is claimed).
+  applies_to: [real_estate_professional]
+  jurisdictions: [AU]
+  deadline: 24 hours (terrorism financing) or 3 business days (other suspicions)
+  source: { instrument: "AML/CTF Act 2006; AUSTRAC guidance: Suspicious matter reports", section: "s 41(2)(a)-(b)", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/reporting-us/suspicious-matter-reports", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+- id: keep-initial-cdd-records
+  title: Keep records of how initial CDD was established
+  description: Keep sufficient and accurate records of the data collected and decisions made, for 7 years after the business relationship ends or 7 years after the last occasional transaction. Copies of identity documents are not required.
+  applies_to: [real_estate_professional]
+  jurisdictions: [AU]
+  deadline: 7 years
+  source: { instrument: "AML/CTF Act 2006 s 111; AUSTRAC guidance: Overview of initial customer due diligence", section: "s 111", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/customer-due-diligence/initial-customer-due-diligence/overview-initial-customer-due-diligence", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+- id: enrol-with-austrac
+  title: Enrol with AUSTRAC
+  description: Enrolment is required for businesses that provide table 6 designated services. The enrolment deadline (29 July 2026) comes from a search-result summary of AUSTRAC pages and has not been read on the page itself.
+  applies_to: [real_estate_professional]
+  jurisdictions: [AU]
+  effective_from: "2026-07-01"
+  status: needs_review
+- id: aml-ctf-program-and-compliance-officer
+  title: Have an AML/CTF program and an AML/CTF compliance officer
+  description: Reported in AUSTRAC summaries as required from 1 July 2026. Not read on a primary page for this pack.
+  applies_to: [real_estate_professional]
+  jurisdictions: [AU]
+  effective_from: "2026-07-01"
+  status: needs_review
+- id: ongoing-cdd
+  title: Apply ongoing customer due diligence
+  description: AUSTRAC publishes ongoing CDD guidance that this pack has not yet read or encoded.
+  applies_to: [real_estate_professional]
+  jurisdictions: [AU]
+  effective_from: "2026-07-01"
+  status: needs_review

@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). Company buyer, beneficial owners not identified.
+id: company-owners-unknown
+synthetic: true
+scenario_type: customer_due_diligence
+jurisdiction: AU
+as_of: "2026-11-22"
+inputs: {"service": {"interest_type": "fee_simple", "directly_advances_transaction": true, "transaction_exists": true, "court_or_tribunal_order": false, "in_course_of_business": true}, "customer": {"type": "company", "role": "buyer", "pep_status": "not_pep", "sanctions_status": "not_designated", "high_risk_jurisdiction_link": "no", "identity_verified": "verified", "beneficial_owners_identified": "no", "purpose_and_nature_established": true, "source_of_funds_established": false, "ml_tf_risk_rating": "low", "unusual_transaction": false, "suspicion_formed": false}}
+expect: {"outcome": "hold_pending_cdd", "action_ids": ["complete-initial-cdd", "keep-cdd-records", "identify-beneficial-owners"], "reason_rule_ids": ["in-scope-standard-cdd", "beneficial-owners-not-established"], "missing_paths": ["customer.beneficial_owners_identified"]}

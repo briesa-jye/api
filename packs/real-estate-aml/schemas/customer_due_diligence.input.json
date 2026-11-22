@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["service", "customer"],
+  "properties": {
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["interest_type", "directly_advances_transaction", "transaction_exists", "court_or_tribunal_order", "in_course_of_business"],
+      "properties": {
+        "interest_type": { "enum": ["fee_simple", "leasehold_over_30_years", "land_use_entitlement", "other"], "description": "Kind of interest in land being sold, bought or transferred. 'other' covers e.g. leases of 30 years or less, easements, mortgagee interests, standalone licences to occupy." },
+        "directly_advances_transaction": { "type": "boolean", "description": "Caller's view: the business acts on instructions and takes active steps that directly advance the transaction (not only general advice or ancillary services)." },
+        "transaction_exists": { "type": "boolean", "description": "A buyer and seller have agreed a price (private treaty), or a buyer was successful at auction that met reserve." },
+        "court_or_tribunal_order": { "type": "boolean", "description": "The transfer is pursuant to, or results from, a court or tribunal order." },
+        "in_course_of_business": { "type": "boolean" },
+        "transaction_value_aud": { "type": "number", "minimum": 0, "description": "Informational only. No rule uses it yet (see RULES_TO_VERIFY.md)." }
+      }
+    },
+    "customer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "role", "pep_status", "sanctions_status", "high_risk_jurisdiction_link", "identity_verified", "beneficial_owners_identified", "purpose_and_nature_established", "source_of_funds_established", "ml_tf_risk_rating", "unusual_transaction", "suspicion_formed"],
+      "properties": {
+        "type": { "enum": ["individual", "sole_trader", "company", "trust", "partnership", "other"] },
+        "role": { "enum": ["buyer", "seller"] },
+        "foreign_person": { "type": "boolean", "description": "Informational. No active rule uses it (see RULES_TO_VERIFY.md)." },
+        "pep_status": { "enum": ["not_pep", "foreign_pep", "domestic_pep", "international_organisation_pep", "unknown"], "description": "As determined by the caller for the customer, beneficial owners and persons acting for or on behalf of the customer." },
+        "sanctions_status": { "enum": ["not_designated", "designated", "unknown"], "description": "Designation for targeted financial sanctions, as determined by the caller." },
+        "high_risk_jurisdiction_link": { "enum": ["yes", "no", "unknown"], "description": "Customer, a beneficial owner, or a person acting for or on behalf of the customer is physically present in or formed in a jurisdiction the FATF has called on members to apply enhanced due diligence to." },
+        "identity_verified": { "enum": ["verified", "in_progress", "not_verified"] },
+        "beneficial_owners_identified": { "enum": ["yes", "no", "not_applicable", "unknown"] },
+        "purpose_and_nature_established": { "type": "boolean" },
+        "source_of_funds_established": { "type": "boolean" },
+        "ml_tf_risk_rating": { "enum": ["low", "medium", "high", "not_assessed"], "description": "The business's own ML/TF risk rating for the customer." },
+        "unusual_transaction": { "type": "boolean", "description": "Unusually complex or large, no apparent economic or legal purpose, or an unusual pattern of transactions." },
+        "suspicion_formed": { "type": "boolean", "description": "A person in the business reports that a suspicion relevant to a suspicious matter report has formed." }
+      }
+    }
+  }
+}

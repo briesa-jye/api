@@ -1,0 +1,18 @@
+id: real-estate-aml
+name: Real estate AML/CTF customer due diligence
+industry: real-estate
+regulators: [AUSTRAC]
+jurisdictions: [AU]
+version: 0.1.0
+status: draft
+maintainers: [Briesa]
+licence_tier: standard
+reviewer: null
+scenario_types:
+  customer_due_diligence:
+    description: Decide the customer due diligence path for a real estate customer under the AML/CTF Act table 6 item 1 designated service
+    input_schema: schemas/customer_due_diligence.input.json
+    outcome:
+      # lowest to highest. hold_pending_cdd = required initial CDD matters are not yet established.
+      order: [not_in_scope, standard_cdd, enhanced_cdd, hold_pending_cdd]
+      default: not_in_scope

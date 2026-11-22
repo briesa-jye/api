@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). Business rated the customer high risk; source of funds missing.
+id: high-risk-rating
+synthetic: true
+scenario_type: customer_due_diligence
+jurisdiction: AU
+as_of: "2026-11-22"
+inputs: {"service": {"interest_type": "fee_simple", "directly_advances_transaction": true, "transaction_exists": true, "court_or_tribunal_order": false, "in_course_of_business": true}, "customer": {"type": "individual", "role": "seller", "pep_status": "not_pep", "sanctions_status": "not_designated", "high_risk_jurisdiction_link": "no", "identity_verified": "verified", "beneficial_owners_identified": "not_applicable", "purpose_and_nature_established": true, "source_of_funds_established": false, "ml_tf_risk_rating": "high", "unusual_transaction": false, "suspicion_formed": false}}
+expect: {"outcome": "enhanced_cdd", "escalation_recommended": false, "action_ids": ["complete-initial-cdd", "keep-cdd-records", "apply-enhanced-cdd", "establish-source-of-funds-and-wealth"], "reason_rule_ids": ["in-scope-standard-cdd", "high-risk-rating-enhanced-cdd", "enhanced-cdd-source-of-funds"], "missing_paths": ["customer.source_of_funds_established"]}

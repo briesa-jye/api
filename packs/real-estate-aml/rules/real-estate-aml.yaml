@@ -1,0 +1,310 @@
+- id: in-scope-standard-cdd
+  version: 1.0.0
+  title: "Real estate transaction service is in scope; complete initial CDD"
+  description: "The service appears to be a table 6 item 1 designated service (assisting in a transaction to sell, buy or transfer real estate), so initial customer due diligence applies before the service starts."
+  jurisdictions: [AU]
+  when: &scope { all: [
+        { path: service.interest_type, op: in, value: [fee_simple, leasehold_over_30_years, land_use_entitlement] },
+        { path: service.directly_advances_transaction, op: eq, value: true },
+        { path: service.transaction_exists, op: eq, value: true },
+        { path: service.court_or_tribunal_order, op: eq, value: false },
+        { path: service.in_course_of_business, op: eq, value: true } ] }
+  then:
+    outcome: standard_cdd
+    required_actions:
+      - { id: complete-initial-cdd, description: "Complete initial CDD before you start providing the designated service. If you cannot establish the required matters on reasonable grounds, you must not start providing it (delayed initial CDD has its own conditions)." }
+      - { id: keep-cdd-records, description: "Keep records showing how you established each initial CDD matter, for 7 years after the business relationship ends or 7 years after the last occasional transaction." }
+    reason: Interest in land, transaction, no court order and business context all indicate a table 6 item 1 designated service.
+  source: { instrument: "AML/CTF Act 2006; AUSTRAC guidance: Overview of initial customer due diligence", section: "ss 28, 111, 136-141", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/customer-due-diligence/initial-customer-due-diligence/overview-initial-customer-due-diligence", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: out-of-scope-court-order
+  version: 1.0.0
+  title: "Transfer under a court or tribunal order is excluded"
+  description: "Item 1 does not apply where the sale, purchase or transfer is pursuant to, or results from, an order of a court or tribunal."
+  jurisdictions: [AU]
+  when: { path: service.court_or_tribunal_order, op: eq, value: true }
+  then: { outcome: not_in_scope, reason: "Item 1 excludes transfers pursuant to or resulting from a court or tribunal order. Services to obtain the order may still be in scope; a qualified person should confirm." }
+  source: { instrument: "AML/CTF Act 2006 table 6 (s 6(5B)); AUSTRAC guidance: Professional designated services", section: "table 6 item 1", url: "https://www.austrac.gov.au/new-austrac/designated-services-newly-regulated-entities/professional-designated-services", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: out-of-scope-interest-type
+  version: 1.0.0
+  title: "Interest is not 'real estate' as defined"
+  description: "Real estate covers fee simple, leaseholds over 30 years and land use entitlements; leases of 30 years or less, easements, mortgagee interests and standalone licences to occupy are excluded."
+  jurisdictions: [AU]
+  when: { path: service.interest_type, op: eq, value: other }
+  then: { outcome: not_in_scope, reason: "The interest is not one of the interests AUSTRAC describes as real estate. A qualified person should confirm the characterisation of the interest." }
+  source: { instrument: "AML/CTF Act 2006 table 6 (s 6(5B)); AUSTRAC guidance: Professional designated services", section: "table 6 item 1", url: "https://www.austrac.gov.au/new-austrac/designated-services-newly-regulated-entities/professional-designated-services", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: out-of-scope-no-transaction-yet
+  version: 1.0.0
+  title: "No transaction exists yet"
+  description: "A person starts providing the designated service when they act on instructions and a relevant transaction exists (typically agreed price, or successful auction bid that met reserve)."
+  jurisdictions: [AU]
+  when: { path: service.transaction_exists, op: eq, value: false }
+  then: { outcome: not_in_scope, reason: "AUSTRAC says the designated service typically starts once a buyer and seller have agreed a price or a buyer succeeded at an auction that met reserve. Re-assess when that occurs." }
+  source: { instrument: "AML/CTF Act 2006 table 6 (s 6(5B)); AUSTRAC guidance: Professional designated services", section: "table 6 item 1", url: "https://www.austrac.gov.au/new-austrac/designated-services-newly-regulated-entities/professional-designated-services", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: out-of-scope-not-directly-advancing
+  version: 1.0.0
+  title: "Service does not directly advance the transaction"
+  description: "General advice or ancillary services that merely influence a transaction are not regulated under table 6."
+  jurisdictions: [AU]
+  when: { path: service.directly_advances_transaction, op: eq, value: false }
+  then: { outcome: not_in_scope, reason: "AUSTRAC says being connected to a transaction is not enough; the service must involve active steps that move the transaction forward." }
+  source: { instrument: "AML/CTF Act 2006 table 6 (s 6(5B)); AUSTRAC guidance: Professional designated services", section: "table 6 item 1", url: "https://www.austrac.gov.au/new-austrac/designated-services-newly-regulated-entities/professional-designated-services", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: out-of-scope-not-in-business
+  version: 1.0.0
+  title: "Not provided in the course of carrying on a business"
+  description: "A service is only a table 6 designated service if provided in the course of carrying on a business."
+  jurisdictions: [AU]
+  when: { path: service.in_course_of_business, op: eq, value: false }
+  then: { outcome: not_in_scope, reason: "Table 6 services must be provided in the course of carrying on a business." }
+  source: { instrument: "AML/CTF Act 2006 table 6 (s 6(5B)); AUSTRAC guidance: Professional designated services", section: "table 6 item 1", url: "https://www.austrac.gov.au/new-austrac/designated-services-newly-regulated-entities/professional-designated-services", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: identity-not-established
+  version: 1.0.0
+  title: "Customer identity not yet established"
+  description: "Initial CDD requires establishing the customer's identity on reasonable grounds before the service starts."
+  jurisdictions: [AU]
+  when: { all: [ *scope, { path: customer.identity_verified, op: in, value: [in_progress, not_verified] } ] }
+  then: 
+    outcome: hold_pending_cdd
+    required_actions: [{ id: verify-customer-identity, description: "Take reasonable steps to establish the customer is who they claim to be, verifying KYC information with reliable and independent data appropriate to the customer's ML/TF risk." }]
+    missing_information: [{ path: customer.identity_verified, description: Verification of the customer's identity }]
+  source: { instrument: "AML/CTF Act 2006; AUSTRAC guidance: Overview of initial customer due diligence", section: "ss 28(2), 111; Rules ss 6-21, 6-23", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/customer-due-diligence/initial-customer-due-diligence/overview-initial-customer-due-diligence", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: beneficial-owners-not-established
+  version: 1.0.0
+  title: "Beneficial owners not yet identified"
+  description: "If the customer is not an individual, initial CDD requires identifying the beneficial owners (individuals who ultimately own 25% or more of, or otherwise control, the customer)."
+  jurisdictions: [AU]
+  when: { all: [ *scope, { all: [ { path: customer.type, op: in, value: [company, trust, partnership, other] }, { path: customer.beneficial_owners_identified, op: in, value: [no, unknown] } ] } ] }
+  then: 
+    outcome: hold_pending_cdd
+    required_actions: [{ id: identify-beneficial-owners, description: "Identify and verify the individuals who ultimately own 25% or more of the customer or otherwise control it, following the chain of ownership." }]
+    missing_information: [{ path: customer.beneficial_owners_identified, description: Beneficial owners of the customer }]
+  source: { instrument: "AML/CTF Act 2006; AUSTRAC guidance: Overview of initial customer due diligence", section: "s 28; Rules Part 6", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/customer-due-diligence/initial-customer-due-diligence/overview-initial-customer-due-diligence", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: purpose-not-established
+  version: 1.0.0
+  title: "Nature and purpose not yet established"
+  description: "Initial CDD requires establishing the nature and purpose of the business relationship or occasional transaction."
+  jurisdictions: [AU]
+  when: { all: [ *scope, { path: customer.purpose_and_nature_established, op: eq, value: false } ] }
+  then: 
+    outcome: hold_pending_cdd
+    required_actions: [{ id: establish-nature-and-purpose, description: Establish the nature and purpose of the business relationship or occasional transaction on reasonable grounds. }]
+    missing_information: [{ path: customer.purpose_and_nature_established, description: Nature and purpose of the relationship or transaction }]
+  source: { instrument: "AML/CTF Act 2006; AUSTRAC guidance: Overview of initial customer due diligence", section: "ss 28(2), 111; Rules ss 6-21, 6-23", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/customer-due-diligence/initial-customer-due-diligence/overview-initial-customer-due-diligence", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: risk-not-assessed
+  version: 1.0.0
+  title: "Customer ML/TF risk not yet assessed"
+  description: "You must identify the customer's ML/TF risk as part of establishing initial CDD matters."
+  jurisdictions: [AU]
+  when: { all: [ *scope, { path: customer.ml_tf_risk_rating, op: eq, value: not_assessed } ] }
+  then: 
+    outcome: hold_pending_cdd
+    required_actions: [{ id: assess-customer-ml-tf-risk, description: Identify the customer's ML/TF risk from the KYC information collected. }]
+    missing_information: [{ path: customer.ml_tf_risk_rating, description: The business's ML/TF risk rating for the customer }]
+  source: { instrument: "AML/CTF Act 2006; AUSTRAC guidance: Overview of initial customer due diligence", section: "Act ss 26F, 28; Rules s 5-2", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/customer-due-diligence/initial-customer-due-diligence/overview-initial-customer-due-diligence", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: pep-status-unknown
+  version: 1.0.0
+  title: "PEP status not yet determined"
+  description: "You must establish whether the customer, beneficial owners and persons acting for or on behalf of the customer are politically exposed persons."
+  jurisdictions: [AU]
+  when: { all: [ *scope, { path: customer.pep_status, op: eq, value: unknown } ] }
+  then: 
+    outcome: hold_pending_cdd
+    required_actions: [{ id: determine-pep-status, description: Establish whether the customer and associated persons are PEPs. }]
+    missing_information: [{ path: customer.pep_status, description: PEP status of the customer and associated persons }]
+  source: { instrument: "AML/CTF Act 2006; AUSTRAC guidance: Overview of initial customer due diligence", section: "ss 28(2), 111; Rules ss 6-21, 6-23", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/customer-due-diligence/initial-customer-due-diligence/overview-initial-customer-due-diligence", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: sanctions-status-unknown
+  version: 1.0.0
+  title: "Targeted financial sanctions status not yet determined"
+  description: "You must establish whether the customer and associated persons are designated for targeted financial sanctions."
+  jurisdictions: [AU]
+  when: { all: [ *scope, { path: customer.sanctions_status, op: eq, value: unknown } ] }
+  then: 
+    outcome: hold_pending_cdd
+    required_actions: [{ id: determine-sanctions-status, description: Establish whether the customer and associated persons are designated for targeted financial sanctions. }]
+    missing_information: [{ path: customer.sanctions_status, description: Targeted financial sanctions designation status }]
+  source: { instrument: "AML/CTF Act 2006; AUSTRAC guidance: Overview of initial customer due diligence", section: "ss 28(2), 111; Rules ss 6-21, 6-23", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/customer-due-diligence/initial-customer-due-diligence/overview-initial-customer-due-diligence", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: sanctions-designated-escalate
+  version: 1.0.0
+  title: "Customer or associate reported as designated for targeted financial sanctions"
+  description: "The caller reports a targeted financial sanctions designation. The consequences of a designation sit outside this pack."
+  jurisdictions: [AU]
+  when: { all: [ *scope, { path: customer.sanctions_status, op: eq, value: designated } ] }
+  then: 
+    outcome: hold_pending_cdd
+    escalate: true
+    required_actions: [{ id: refer-sanctions-designation, description: "Do not proceed until a qualified person has reviewed the designation and the legal consequences. This pack does not decide them." }]
+    reason: A targeted financial sanctions designation was reported. A qualified person must decide what follows.
+  source: { instrument: "AML/CTF Act 2006; AUSTRAC guidance: Overview of initial customer due diligence", section: "ss 28(2), 111; Rules ss 6-21, 6-23", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/customer-due-diligence/initial-customer-due-diligence/overview-initial-customer-due-diligence", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: foreign-pep-enhanced-cdd
+  version: 1.0.0
+  title: "Foreign PEP requires enhanced CDD"
+  description: "Enhanced CDD must be applied if the customer, a beneficial owner, a person on whose behalf the customer receives the service, or a person acting for the customer is a foreign PEP."
+  jurisdictions: [AU]
+  when: { all: [ *scope, { path: customer.pep_status, op: eq, value: foreign_pep } ] }
+  then: 
+    outcome: enhanced_cdd
+    escalate: true
+    required_actions: [{ id: apply-enhanced-cdd, description: "Apply enhanced CDD measures targeted to the customer's ML/TF risk, and escalate to senior management as your AML/CTF policies require." }]
+  source: { instrument: "AML/CTF Act 2006; AUSTRAC guidance: Enhanced customer due diligence", section: "Act s 32; Rules s 6-20", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/customer-due-diligence/enhanced-customer-due-diligence", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: foreign-pep-source-of-funds-wealth
+  version: 1.0.0
+  title: "Source of funds and wealth of a foreign PEP must be established"
+  description: "Initial CDD must establish on reasonable grounds the source of funds and source of wealth of a foreign PEP."
+  jurisdictions: [AU]
+  when: { all: [ *scope, { all: [ { path: customer.pep_status, op: eq, value: foreign_pep }, { path: customer.source_of_funds_established, op: eq, value: false } ] } ] }
+  then: 
+    outcome: hold_pending_cdd
+    required_actions: [{ id: establish-source-of-funds-and-wealth, description: Establish the source of funds and source of wealth on reasonable grounds. }]
+    missing_information: [{ path: customer.source_of_funds_established, description: Source of funds and source of wealth }]
+  source: { instrument: "AML/CTF Act 2006; AUSTRAC guidance: Overview of initial customer due diligence", section: "ss 28(2), 111; Rules ss 6-21, 6-23", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/customer-due-diligence/initial-customer-due-diligence/overview-initial-customer-due-diligence", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: other-pep-assess-risk
+  version: 1.0.0
+  title: "Domestic or international organisation PEP: assess whether high risk"
+  description: "Source of funds and wealth must be established for high ML/TF risk domestic or international organisation PEPs."
+  jurisdictions: [AU]
+  when: { all: [ *scope, { path: customer.pep_status, op: in, value: [domestic_pep, international_organisation_pep] } ] }
+  then: 
+    outcome: standard_cdd
+    required_actions: [{ id: assess-pep-risk, description: "Assess whether this PEP is high ML/TF risk. If so, enhanced CDD and source of funds and wealth apply." }]
+  source: { instrument: "AML/CTF Act 2006; AUSTRAC guidance: Overview of initial customer due diligence", section: "Rules ss 6-21, 6-23", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/customer-due-diligence/initial-customer-due-diligence/overview-initial-customer-due-diligence", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: high-risk-rating-enhanced-cdd
+  version: 1.0.0
+  title: "High ML/TF risk requires enhanced CDD"
+  description: "Enhanced CDD must be conducted if the customer's ML/TF risk is high."
+  jurisdictions: [AU]
+  when: { all: [ *scope, { path: customer.ml_tf_risk_rating, op: eq, value: high } ] }
+  then: 
+    outcome: enhanced_cdd
+    required_actions: [{ id: apply-enhanced-cdd, description: "Apply enhanced CDD measures targeted to the customer's ML/TF risk, and escalate to senior management as your AML/CTF policies require." }]
+  source: { instrument: "AML/CTF Act 2006; AUSTRAC guidance: Enhanced customer due diligence", section: "Act s 32; Rules s 6-20", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/customer-due-diligence/enhanced-customer-due-diligence", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: high-risk-jurisdiction-enhanced-cdd
+  version: 1.0.0
+  title: "Link to an FATF call-for-action jurisdiction requires enhanced CDD"
+  description: "Enhanced CDD must be conducted if the customer, a beneficial owner, or a person acting for or on behalf of the customer is physically present in or formed in a high-risk jurisdiction the FATF has called for enhanced CDD on."
+  jurisdictions: [AU]
+  when: { all: [ *scope, { path: customer.high_risk_jurisdiction_link, op: eq, value: 'yes' } ] }
+  then: 
+    outcome: enhanced_cdd
+    required_actions: [{ id: apply-enhanced-cdd, description: "Apply enhanced CDD measures targeted to the customer's ML/TF risk, and escalate to senior management as your AML/CTF policies require." }]
+  source: { instrument: "AML/CTF Act 2006; AUSTRAC guidance: Enhanced customer due diligence", section: "Act s 32; Rules s 6-20", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/customer-due-diligence/enhanced-customer-due-diligence", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: high-risk-jurisdiction-unknown
+  version: 1.0.0
+  title: "Jurisdiction link not yet determined"
+  description: "Whether any relevant person is present in or formed in an FATF call-for-action jurisdiction must be known to decide if enhanced CDD applies."
+  jurisdictions: [AU]
+  when: { all: [ *scope, { path: customer.high_risk_jurisdiction_link, op: eq, value: unknown } ] }
+  then: 
+    outcome: hold_pending_cdd
+    required_actions: [{ id: determine-high-risk-jurisdiction-link, description: Establish whether the customer or associated persons are present in or formed in an FATF call-for-action jurisdiction. }]
+    missing_information: [{ path: customer.high_risk_jurisdiction_link, description: Link to FATF call-for-action jurisdictions }]
+  source: { instrument: "AML/CTF Act 2006; AUSTRAC guidance: Enhanced customer due diligence", section: "Act s 32; Rules s 6-20", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/customer-due-diligence/enhanced-customer-due-diligence", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: unusual-transaction-enhanced-cdd
+  version: 1.0.0
+  title: "Unusual, large or complex transaction requires enhanced CDD"
+  description: "Enhanced CDD must be applied if the service involves transactions that are unusually complex or large, have no apparent economic or legal purpose, or show an unusual pattern."
+  jurisdictions: [AU]
+  when: { all: [ *scope, { path: customer.unusual_transaction, op: eq, value: true } ] }
+  then: 
+    outcome: enhanced_cdd
+    required_actions: [{ id: apply-enhanced-cdd, description: "Apply enhanced CDD measures targeted to the customer's ML/TF risk, and escalate to senior management as your AML/CTF policies require." }]
+  source: { instrument: "AML/CTF Act 2006; AUSTRAC guidance: Enhanced customer due diligence", section: "Act s 32; Rules s 6-20", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/customer-due-diligence/enhanced-customer-due-diligence", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: enhanced-cdd-source-of-funds
+  version: 1.0.0
+  title: "Enhanced CDD: source of funds and wealth where relevant"
+  description: "If enhanced CDD applies, source of funds and source of wealth must be established where relevant to the nature of the customer's high ML/TF risk."
+  jurisdictions: [AU]
+  when: { all: [ *scope, { all: [ { path: customer.source_of_funds_established, op: eq, value: false }, { any: [ { path: customer.ml_tf_risk_rating, op: eq, value: high }, { path: customer.unusual_transaction, op: eq, value: true }, { path: customer.high_risk_jurisdiction_link, op: eq, value: 'yes' } ] } ] } ] }
+  then: 
+    outcome: enhanced_cdd
+    required_actions: [{ id: establish-source-of-funds-and-wealth, description: "Establish the source of funds and source of wealth on reasonable grounds if relevant to the nature of the customer's ML/TF risk." }]
+    missing_information: [{ path: customer.source_of_funds_established, description: Source of funds and source of wealth }]
+  source: { instrument: "AML/CTF Act 2006; AUSTRAC guidance: Overview of initial customer due diligence", section: "Rules ss 6-21, 6-23, 6-24", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/customer-due-diligence/initial-customer-due-diligence/overview-initial-customer-due-diligence", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: suspicion-formed-escalate
+  version: 1.0.0
+  title: "A suspicion has formed: a person must decide on a suspicious matter report"
+  description: "Where a suspicious matter report is required and the business intends to continue the service, enhanced CDD must be applied. SMR deadlines run from forming the suspicion."
+  jurisdictions: [AU]
+  when: { all: [ *scope, { path: customer.suspicion_formed, op: eq, value: true } ] }
+  then:
+    outcome: enhanced_cdd
+    escalate: true
+    required_actions:
+      - { id: consider-smr-decision, description: "A qualified person must decide whether to submit a suspicious matter report. Deadlines: 24 hours of forming the suspicion if related to terrorism financing; 3 business days after the day the suspicion formed for other suspicions. This pack does not decide whether to report." }
+      - { id: apply-enhanced-cdd, description: "If the service will continue, apply enhanced CDD; it need not be completed before the SMR is submitted." }
+      - { id: observe-tipping-off-obligations, description: Comply with tipping off obligations when interacting with the customer. }
+    reason: A suspicion was reported as formed. Only a qualified person can decide to report.
+  source: { instrument: "AML/CTF Act 2006; AUSTRAC guidance: Suspicious matter reports", section: "s 41(2)(a)-(b)", url: "https://www.austrac.gov.au/industry-and-business/obligations-and-guidance/your-amlctf-program/reporting-us/suspicious-matter-reports", retrieved: "2026-11-22" }
+  effective_from: "2026-07-01"
+  status: active
+
+- id: foreign-person-risk-factor
+  version: 1.0.0
+  title: "Foreign person status as a risk factor (unverified)"
+  description: "The caller flagged the customer as a foreign person. No AUSTRAC source read for this pack says foreign-person status changes CDD obligations; confirm before relying on it."
+  jurisdictions: [AU]
+  when: { path: customer.foreign_person, op: eq, value: true }
+  then: { outcome: enhanced_cdd }
+  effective_from: "2026-07-01"
+  status: needs_review

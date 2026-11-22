@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). Foreign person flag only triggers a needs_review rule, which must not change the outcome.
+id: foreign-person-unverified-rule
+synthetic: true
+scenario_type: customer_due_diligence
+jurisdiction: AU
+as_of: "2026-11-22"
+inputs: {"service": {"interest_type": "fee_simple", "directly_advances_transaction": true, "transaction_exists": true, "court_or_tribunal_order": false, "in_course_of_business": true}, "customer": {"type": "individual", "role": "seller", "pep_status": "not_pep", "sanctions_status": "not_designated", "high_risk_jurisdiction_link": "no", "identity_verified": "verified", "beneficial_owners_identified": "not_applicable", "purpose_and_nature_established": true, "source_of_funds_established": false, "ml_tf_risk_rating": "low", "unusual_transaction": false, "suspicion_formed": false, "foreign_person": true}}
+expect: {"outcome": "standard_cdd", "action_ids": ["complete-initial-cdd", "keep-cdd-records"], "reason_rule_ids": ["in-scope-standard-cdd"]}

@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). No agreed price yet.
+id: no-transaction-yet
+synthetic: true
+scenario_type: customer_due_diligence
+jurisdiction: AU
+as_of: "2026-11-22"
+inputs: {"service": {"interest_type": "fee_simple", "directly_advances_transaction": true, "transaction_exists": false, "court_or_tribunal_order": false, "in_course_of_business": true}, "customer": {"type": "individual", "role": "seller", "pep_status": "not_pep", "sanctions_status": "not_designated", "high_risk_jurisdiction_link": "no", "identity_verified": "verified", "beneficial_owners_identified": "not_applicable", "purpose_and_nature_established": true, "source_of_funds_established": false, "ml_tf_risk_rating": "low", "unusual_transaction": false, "suspicion_formed": false}}
+expect: {"outcome": "not_in_scope", "action_ids": [], "reason_rule_ids": ["out-of-scope-no-transaction-yet"]}
