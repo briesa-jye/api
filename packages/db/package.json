@@ -1,0 +1,8 @@
+{
+  "name": "@briesa/db",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@prisma/client": "^6" },
+  "devDependencies": { "prisma": "^6" }
+}

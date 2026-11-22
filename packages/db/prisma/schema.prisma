@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id            String   @id @default(cuid())
+  name          String
+  retentionDays Int      @default(365)
+  createdAt     DateTime @default(now())
+  keys          ApiKey[]
+}
+
+model ApiKey {
+  id                 String    @id @default(cuid())
+  tenantId           String
+  tenant             Tenant    @relation(fields: [tenantId], references: [id])
+  name               String
+  prefix             String    @unique
+  hash               String
+  mode               String // "test" | "live"
+  scopes             String[]
+  rateLimitPerMinute Int       @default(60)
+  createdAt          DateTime  @default(now())
+  revokedAt          DateTime?
+  rotatedFromId      String?
+
+  @@index([tenantId])
+}
+
+model UsageEvent {
+  id        String   @id @default(cuid())
+  tenantId  String
+  keyId     String
+  packId    String?
+  endpoint  String
+  test      Boolean
+  month     String // "YYYY-MM"
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, month])
+}
+
+// Append-only. The application never updates or deletes rows except via the retention job.
+model AuditRecord {
+  id           String   @id @default(cuid())
+  requestId    String
+  tenantId     String
+  keyId        String
+  endpoint     String
+  packId       String?
+  packVersion  String?
+  ruleVersions Json?
+  inputsHash   String
+  output       Json?
+  model        String?
+  test         Boolean
+  createdAt    DateTime @default(now())
+
+  @@unique([tenantId, requestId])
+}
+
+model IdempotencyRecord {
+  id           String   @id @default(cuid())
+  tenantId     String
+  key          String
+  requestHash  String
+  status       Int
+  responseBody String
+  createdAt    DateTime @default(now())
+
+  @@unique([tenantId, key])
+}

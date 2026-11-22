@@ -1,0 +1,7 @@
+{
+  "name": "@briesa/api",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "node --watch src/main.ts", "start": "node src/main.ts" },
+  "dependencies": { "@briesa/db": "workspace:*", "fastify": "^5", "zod": "^4" }
+}

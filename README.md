@@ -1,9 +1,11 @@
-# api
+# Briesa Compliance API
 
-Minimal Node API.
+Horizontal compliance decision-support API. Industries are data "packs"; the platform knows nothing about any industry.
 
 ```bash
-npm run dev
+corepack pnpm install
+corepack pnpm test
+corepack pnpm typecheck
 ```
 
-`GET /health` returns `{"ok":true}`.
+Status: phase 1 (platform foundation). See `DECISIONS.md` for defaults and open items.
