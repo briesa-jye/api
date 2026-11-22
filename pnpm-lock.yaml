@@ -181,6 +181,12 @@ importers:
       '@briesa/db':
         specifier: workspace:*
         version: link:packages/db
+      '@briesa/engine':
+        specifier: workspace:*
+        version: link:packages/engine
+      '@briesa/packs':
+        specifier: workspace:*
+        version: link:packages/packs
       '@types/node':
         specifier: ^24
         version: 24.19.2
@@ -189,19 +195,31 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^3
-        version: 3.2.7(@types/node@24.19.2)(jiti@2.7.0)
+        version: 3.2.7(@types/node@24.19.2)(jiti@2.7.0)(yaml@2.9.1)
 
   apps/api:
     dependencies:
       '@briesa/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@briesa/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
+      '@briesa/packs':
+        specifier: workspace:*
+        version: link:../../packages/packs
       fastify:
         specifier: ^5
         version: 5.12.8
       zod:
         specifier: ^4
         version: 4.6.7
+
+  cli:
+    dependencies:
+      '@briesa/packs':
+        specifier: workspace:*
+        version: link:../packages/packs
 
   packages/db:
     dependencies:
@@ -212,6 +230,27 @@ importers:
       prisma:
         specifier: ^6
         version: 6.19.3(typescript@5.9.3)
+
+  packages/engine:
+    dependencies:
+      zod:
+        specifier: ^4
+        version: 4.6.7
+
+  packages/packs:
+    dependencies:
+      '@briesa/engine':
+        specifier: workspace:*
+        version: link:../engine
+      ajv:
+        specifier: ^8
+        version: 8.20.0
+      yaml:
+        specifier: ^2
+        version: 2.9.1
+      zod:
+        specifier: ^4
+        version: 4.6.7
 
 packages:
 
@@ -1084,6 +1123,11 @@ packages:
     engines: {node: '>=8'}
     hasBin: true
 
+  yaml@2.9.1:
+    resolution: {integrity: sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
+
   zod@4.6.7:
     resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
 
@@ -1332,13 +1376,13 @@ snapshots:
       chai: 5.3.3
       tinyrainbow: 2.0.0
 
-  '@vitest/mocker@3.2.7(vite@7.3.8(@types/node@24.19.2)(jiti@2.7.0))':
+  '@vitest/mocker@3.2.7(vite@7.3.8(@types/node@24.19.2)(jiti@2.7.0)(yaml@2.9.1))':
     dependencies:
       '@vitest/spy': 3.2.7
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 7.3.8(@types/node@24.19.2)(jiti@2.7.0)
+      vite: 7.3.8(@types/node@24.19.2)(jiti@2.7.0)(yaml@2.9.1)
 
   '@vitest/pretty-format@3.2.7':
     dependencies:
@@ -1768,13 +1812,13 @@ snapshots:
 
   undici-types@7.24.6: {}
 
-  vite-node@3.2.4(@types/node@24.19.2)(jiti@2.7.0):
+  vite-node@3.2.4(@types/node@24.19.2)(jiti@2.7.0)(yaml@2.9.1):
     dependencies:
       cac: 6.7.14
       debug: 4.4.3
       es-module-lexer: 1.7.0
       pathe: 2.0.3
-      vite: 7.3.8(@types/node@24.19.2)(jiti@2.7.0)
+      vite: 7.3.8(@types/node@24.19.2)(jiti@2.7.0)(yaml@2.9.1)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -1789,7 +1833,7 @@ snapshots:
       - tsx
       - yaml
 
-  vite@7.3.8(@types/node@24.19.2)(jiti@2.7.0):
+  vite@7.3.8(@types/node@24.19.2)(jiti@2.7.0)(yaml@2.9.1):
     dependencies:
       esbuild: 0.28.2
       fdir: 6.5.0(picomatch@4.0.7)
@@ -1801,12 +1845,13 @@ snapshots:
       '@types/node': 24.19.2
       fsevents: 2.3.3
       jiti: 2.7.0
+      yaml: 2.9.1
 
-  vitest@3.2.7(@types/node@24.19.2)(jiti@2.7.0):
+  vitest@3.2.7(@types/node@24.19.2)(jiti@2.7.0)(yaml@2.9.1):
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/expect': 3.2.7
-      '@vitest/mocker': 3.2.7(vite@7.3.8(@types/node@24.19.2)(jiti@2.7.0))
+      '@vitest/mocker': 3.2.7(vite@7.3.8(@types/node@24.19.2)(jiti@2.7.0)(yaml@2.9.1))
       '@vitest/pretty-format': 3.2.7
       '@vitest/runner': 3.2.7
       '@vitest/snapshot': 3.2.7
@@ -1824,8 +1869,8 @@ snapshots:
       tinyglobby: 0.2.17
       tinypool: 1.1.1
       tinyrainbow: 2.0.0
-      vite: 7.3.8(@types/node@24.19.2)(jiti@2.7.0)
-      vite-node: 3.2.4(@types/node@24.19.2)(jiti@2.7.0)
+      vite: 7.3.8(@types/node@24.19.2)(jiti@2.7.0)(yaml@2.9.1)
+      vite-node: 3.2.4(@types/node@24.19.2)(jiti@2.7.0)(yaml@2.9.1)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 24.19.2
@@ -1847,5 +1892,7 @@ snapshots:
     dependencies:
       siginfo: 2.0.0
       stackback: 0.0.2
+
+  yaml@2.9.1: {}
 
   zod@4.6.7: {}

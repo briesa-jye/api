@@ -6,13 +6,17 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "dev": "pnpm --filter @briesa/api dev"
+    "dev": "pnpm --filter @briesa/api dev",
+    "pack:validate": "node cli/pack-validate.ts",
+    "pack:new": "node cli/pack-new.ts"
   },
   "devDependencies": {
     "@briesa/db": "workspace:*",
     "@briesa/api": "workspace:*",
     "@types/node": "^24",
     "typescript": "^5.9",
-    "vitest": "^3"
+    "vitest": "^3",
+    "@briesa/engine": "workspace:*",
+    "@briesa/packs": "workspace:*"
   }
 }
