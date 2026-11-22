@@ -1,14 +1,15 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { supabaseKey, supabaseUrl } from "@/lib/supabase/config";
 
-export const supabaseConfigured = () => !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+export const supabaseConfigured = () => !!(supabaseUrl() && supabaseKey());
 /** Local preview only: pretends a demo user is signed in. Never active in production. */
 export const demoMode = () => process.env.NODE_ENV !== "production" && process.env.DEMO_AUTH === "1";
 
 export async function supabaseServer() {
   const jar = await cookies();
-  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+  return createServerClient(supabaseUrl()!, supabaseKey()!, {
     cookies: {
       getAll: () => jar.getAll(),
       setAll: (list) => {

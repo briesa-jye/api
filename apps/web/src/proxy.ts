@@ -1,12 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { supabaseKey, supabaseUrl } from "@/lib/supabase/config";
 
 /**
  * Refreshes the Supabase session cookie on every request and keeps signed-out visitors out of /dashboard.
  * (Next 16 renamed middleware to proxy.) Pages still validate the user themselves; this is a first gate.
  */
 export async function proxy(req: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL, key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url = supabaseUrl(), key = supabaseKey();
   const demo = process.env.NODE_ENV !== "production" && process.env.DEMO_AUTH === "1";
   let res = NextResponse.next({ request: req });
   if (demo) return res;
