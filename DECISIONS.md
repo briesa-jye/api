@@ -32,7 +32,14 @@ Defaults chosen by the build, as agreed with Jye. Change any of these before pro
 - **Billing-exempt tenants** are those created by `pnpm tenant:create` (design partners, internal) unless `--require-subscription` is passed. Self-serve sign-ups are not exempt.
 - Self-serve tenants are created on first sign-in with one owner (`TenantMember`, Supabase Auth user id). One tenant per user for now; no team invites.
 - Key and webhook management rules live in `@briesa/accounts/manage`, used by both the API routes and the dashboard, so they cannot drift.
-- No prices are hard-coded anywhere. Plans come from Stripe prices configured by environment variable.
+- No prices are hard-coded anywhere. Plans come from Stripe prices configured by environment variable (`BRIESA_PLANS`).
+- **Website (`apps/web`)** copies briesa.com's design tokens, fonts, logo and base components rather than depending on the private `@briesa/core` GitHub package (installing it needs a GitHub token). Switch to `@briesa/core` later if you want one source of truth.
+- Marketing pages are static; every dashboard page is `force-dynamic`. The navbar does not know if you are signed in (that would make every page dynamic); `/login` and `/signup` redirect signed-in users to the dashboard.
+- Dashboard actions call the shared `@briesa/accounts` functions directly against the database, not the API. Keys and webhook secrets are shown once, in the response to the action that created them.
+- Login is Supabase Auth with email and password, plus an email-link option. The link option answers identically whether or not the address exists. Minimum password length is 10 in our forms; set the same in Supabase.
+- Stripe: Checkout creates the subscription, the customer portal manages it, and a signed webhook (`/api/stripe/webhook`) is the only thing that changes billing state. A failed webhook returns 500 and releases the event so Stripe's retry is processed.
+- The website's own pages are not behind a Content-Security-Policy yet (Next inline scripts need nonces); other security headers are set.
+- `DEMO_AUTH=1` is a local preview aid only and is ignored when `NODE_ENV=production`.
 
 ## Phase 5 decisions (persistence)
 - `PrismaStore` (Postgres via `@prisma/adapter-pg`) implements the same `Store` contract as `MemoryStore`. One contract test suite runs against both; the Prisma side runs on **PGlite** (real Postgres compiled to WASM) using the project's actual migration SQL. It has **not** been run against a hosted Postgres or through the production `pg` driver, and `prisma migrate deploy` has not been run (no database was available).

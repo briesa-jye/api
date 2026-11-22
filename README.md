@@ -19,6 +19,15 @@ corepack pnpm pack:validate <pack>
 
 Docs: [quickstart](docs/quickstart.md), [API reference](docs/reference.md), [OpenAPI 3.1](docs/openapi.json), [versioning policy](docs/versioning.md), [pack authoring](docs/pack-authoring.md).
 
+## Running it locally
+
+```bash
+corepack pnpm install
+corepack pnpm dev          # the API on :3000; prints throwaway dev keys
+```
+
+Docs and the OpenAPI spec are in `docs/`. The website and dashboard are in `apps/web` (see its README).
+
 ## Running with a database
 
 ```bash

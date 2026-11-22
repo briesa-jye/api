@@ -2,6 +2,14 @@
   "name": "@briesa/packs",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "dependencies": { "@briesa/engine": "workspace:*", "ajv": "^8", "yaml": "^2", "zod": "^4" }
+  "exports": {
+    ".": "./src/index.ts",
+    "./registry": "./src/registry.ts"
+  },
+  "dependencies": {
+    "@briesa/engine": "workspace:*",
+    "ajv": "^8",
+    "yaml": "^2",
+    "zod": "^4"
+  }
 }

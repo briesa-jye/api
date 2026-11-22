@@ -2,21 +2,18 @@
 
 Get a key, make a first assessment, and get notified when rules change. About five minutes.
 
-> **Status:** this is a development build with no hosted environment. Without `DATABASE_URL` the server keeps everything in memory and prints throwaway `test` and `live` keys when it starts; with a database, create a tenant and keys using `pnpm tenant:create` (see the README). Both shipped real packs (`real-estate-aml`, `whs-incident-notification`) are `draft`: useful for integration, **not** production-ready. Every response tells you the pack status.
+> **Status:** both shipped real packs (`real-estate-aml`, `whs-incident-notification`) are `draft`: useful for integration, **not** production-ready. Every response tells you the pack status.
 
-## 1. Run it
+## 1. Get a test key
 
-```bash
-corepack pnpm install
-corepack pnpm dev
-```
-
-The server prints two keys, for example `dev test key: bk_test_…`. Use the **test** key: it runs the same logic, is not billed, and responses carry `test_mode: true`.
+Create an account at the Briesa API website and open **Dashboard, API keys**. Create a **test** key. Test keys are free, need no card, run the same logic as live keys, and every response carries `test_mode: true`. The key is shown once, so copy it straight away.
 
 ```bash
 export BRIESA_KEY=bk_test_...
-export BRIESA_URL=http://localhost:3000
+export BRIESA_URL=<the API base URL shown on your dashboard overview>
 ```
+
+Live keys need an active subscription. Until you subscribe, a live key returns `402 subscription_required`.
 
 ## 2. See what packs you can use
 

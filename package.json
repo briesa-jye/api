@@ -15,6 +15,7 @@
     "db:generate": "pnpm --filter @briesa/db exec prisma generate"
   },
   "devDependencies": {
+    "@briesa/accounts": "workspace:*",
     "@briesa/ai": "workspace:*",
     "@briesa/api": "workspace:*",
     "@briesa/db": "workspace:*",
@@ -25,8 +26,8 @@
     "@scalar/openapi-parser": "^0.29.26",
     "@types/node": "^24",
     "pglite-prisma-adapter": "^0.7.2",
+    "stripe": "^19.3.0",
     "typescript": "^5.9",
-    "vitest": "^3",
-    "@briesa/accounts": "workspace:*"
+    "vitest": "^3"
   }
 }
