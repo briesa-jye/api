@@ -8,16 +8,25 @@ datasource db {
 }
 
 model Tenant {
-  id            String              @id @default(cuid())
-  name          String
-  retentionDays Int                 @default(365)
-  createdAt     DateTime            @default(now())
-  keys          ApiKey[]
-  usage         UsageEvent[]
-  audits        AuditRecord[]
-  idempotency   IdempotencyRecord[]
-  endpoints     WebhookEndpoint[]
-  deliveries    WebhookDelivery[]
+  id                 String              @id @default(cuid())
+  name               String
+  retentionDays      Int                 @default(365)
+  createdAt          DateTime            @default(now())
+  // Billing. Self-serve tenants start with status "none" (sandbox only); billingExempt tenants are provisioned by Briesa.
+  billingExempt      Boolean             @default(false)
+  stripeCustomerId   String?             @unique
+  subscriptionStatus String              @default("none")
+  subscriptionId     String?
+  planId             String?
+  licensedPacks      String[]            @default([])
+  currentPeriodEnd   DateTime?
+  keys               ApiKey[]
+  usage              UsageEvent[]
+  audits             AuditRecord[]
+  idempotency        IdempotencyRecord[]
+  endpoints          WebhookEndpoint[]
+  deliveries         WebhookDelivery[]
+  tenantMembers      TenantMember[]
 }
 
 model ApiKey {
@@ -117,4 +126,23 @@ model WebhookDelivery {
 
   @@index([status, nextAttemptAt])
   @@index([tenantId, endpointId])
+}
+
+// A signed-in dashboard user (Supabase Auth user id) and the tenant they manage. One tenant per user for now.
+model TenantMember {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  userId    String   @unique
+  email     String
+  role      String   @default("owner")
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+}
+
+// Stripe event ids already processed, so webhook retries are idempotent.
+model StripeEvent {
+  id        String   @id
+  createdAt DateTime @default(now())
 }

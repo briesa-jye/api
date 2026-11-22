@@ -32,7 +32,7 @@ Responses: `200`
 
 Required scope: `read`
 
-Responses: `200`, `401`, `403`, `429`
+Responses: `200`, `401`, `402`, `403`, `429`
 
 ### `GET /v1/packs/{id}`
 
@@ -44,7 +44,7 @@ Required scope: `read`
 |---|---|---|---|
 | `id` | path | yes | Pack id |
 
-Responses: `200`, `401`, `403`, `404`, `429`
+Responses: `200`, `401`, `402`, `403`, `404`, `429`
 
 ## Assessments
 
@@ -70,7 +70,7 @@ Request body:
 | `inputs` | object | yes |  |
 | `options` | object | no |  |
 
-Responses: `200`, `400`, `401`, `403`, `404`, `409`, `429`
+Responses: `200`, `400`, `401`, `402`, `403`, `404`, `409`, `429`
 
 ## Rules
 
@@ -85,7 +85,7 @@ Required scope: `read`
 | `pack` | query | no | Limit to one pack |
 | `status` | query | no | active, needs_review or retired |
 
-Responses: `200`, `401`, `403`, `404`, `429`
+Responses: `200`, `401`, `402`, `403`, `404`, `429`
 
 ### `GET /v1/rules/{id}`
 
@@ -97,7 +97,7 @@ Required scope: `read`
 |---|---|---|---|
 | `id` | path | yes | Rule id |
 
-Responses: `200`, `401`, `403`, `404`, `429`
+Responses: `200`, `401`, `402`, `403`, `404`, `429`
 
 ## Obligations
 
@@ -116,7 +116,7 @@ Required scope: `read`
 | `jurisdiction` | query | no | ACT, NSW, NT, QLD, SA, TAS, VIC or WA |
 | `as_of` | query | no | YYYY-MM-DD |
 
-Responses: `200`, `401`, `403`, `404`, `429`
+Responses: `200`, `401`, `402`, `403`, `404`, `429`
 
 ## Audit
 
@@ -130,7 +130,7 @@ Required scope: `audit:read`
 |---|---|---|---|
 | `request_id` | path | yes | The request_id returned by the original call |
 
-Responses: `200`, `401`, `403`, `404`, `429`
+Responses: `200`, `401`, `402`, `403`, `404`, `429`
 
 ## Usage
 
@@ -144,7 +144,7 @@ Required scope: `read`
 |---|---|---|---|
 | `month` | query | no | YYYY-MM, defaults to the current month |
 
-Responses: `200`, `400`, `401`, `403`, `429`
+Responses: `200`, `400`, `401`, `402`, `403`, `429`
 
 ## API keys
 
@@ -154,7 +154,7 @@ Responses: `200`, `400`, `401`, `403`, `429`
 
 Required scope: `keys:manage`
 
-Responses: `200`, `401`, `403`, `429`
+Responses: `200`, `401`, `402`, `403`, `429`
 
 ### `POST /v1/keys`
 
@@ -173,7 +173,7 @@ Request body:
 | `scopes` | array | yes |  |
 | `rate_limit_per_minute` | integer | no |  |
 
-Responses: `201`, `400`, `401`, `403`, `429`
+Responses: `201`, `400`, `401`, `402`, `403`, `429`
 
 ### `POST /v1/keys/{id}/rotate`
 
@@ -187,7 +187,7 @@ Required scope: `keys:manage`
 |---|---|---|---|
 | `id` | path | yes | Key id |
 
-Responses: `201`, `401`, `403`, `404`, `429`
+Responses: `201`, `401`, `402`, `403`, `404`, `429`
 
 ### `POST /v1/keys/{id}/revoke`
 
@@ -199,7 +199,7 @@ Required scope: `keys:manage`
 |---|---|---|---|
 | `id` | path | yes | Key id |
 
-Responses: `200`, `401`, `403`, `404`, `429`
+Responses: `200`, `401`, `402`, `403`, `404`, `429`
 
 ## Webhooks
 
@@ -209,7 +209,7 @@ Responses: `200`, `401`, `403`, `404`, `429`
 
 Required scope: `webhooks`
 
-Responses: `200`, `401`, `403`, `429`
+Responses: `200`, `401`, `402`, `403`, `429`
 
 ### `POST /v1/webhooks`
 
@@ -227,7 +227,7 @@ Request body:
 | `events` | array | yes |  |
 | `packs` | array | no |  |
 
-Responses: `201`, `400`, `401`, `403`, `404`, `429`
+Responses: `201`, `400`, `401`, `402`, `403`, `404`, `429`
 
 ### `DELETE /v1/webhooks/{id}`
 
@@ -241,7 +241,7 @@ Required scope: `webhooks`
 |---|---|---|---|
 | `id` | path | yes | Webhook id |
 
-Responses: `200`, `401`, `403`, `404`, `429`
+Responses: `200`, `401`, `402`, `403`, `404`, `429`
 
 ### `GET /v1/webhooks/{id}/deliveries`
 
@@ -253,7 +253,7 @@ Required scope: `webhooks`
 |---|---|---|---|
 | `id` | path | yes | Webhook id |
 
-Responses: `200`, `401`, `403`, `404`, `429`
+Responses: `200`, `401`, `402`, `403`, `404`, `429`
 
 ## Webhook events
 

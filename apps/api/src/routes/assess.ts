@@ -35,7 +35,7 @@ export const assessRoutes: FastifyPluginAsync<{ packs: PackRegistry; store: Stor
     }
     const b = parsed.data;
     const pack = packs.get(b.pack);
-    if (!pack || !hasPackAccess(req.auth!.scopes, b.pack)) {
+    if (!pack || !hasPackAccess(req.scopes, b.pack)) {
       throw new ApiError("not_found_error", "pack_not_found", "No such pack.");
     }
     const m = pack.manifest;

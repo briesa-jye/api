@@ -14,12 +14,12 @@ const summary = (p: Pack) => ({
 /** 404 (not 403) for packs the key can't access, so unlicensed pack ids aren't enumerable. */
 function accessiblePack(req: FastifyRequest, reg: PackRegistry, id: string): Pack {
   const p = reg.get(id);
-  if (!p || !hasPackAccess(req.auth!.scopes, id)) throw new ApiError("not_found_error", "pack_not_found", "No such pack.");
+  if (!p || !hasPackAccess(req.scopes, id)) throw new ApiError("not_found_error", "pack_not_found", "No such pack.");
   return p;
 }
 
 export const packRoutes: FastifyPluginAsync<{ packs: PackRegistry }> = async (app, { packs }) => {
-  const visible = (req: FastifyRequest) => packs.list().filter((p) => hasPackAccess(req.auth!.scopes, p.manifest.id));
+  const visible = (req: FastifyRequest) => packs.list().filter((p) => hasPackAccess(req.scopes, p.manifest.id));
 
   app.get("/v1/packs", { config: { scope: "read" } }, async (req) => ({ packs: visible(req).map(summary) }));
 

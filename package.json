@@ -26,6 +26,7 @@
     "@types/node": "^24",
     "pglite-prisma-adapter": "^0.7.2",
     "typescript": "^5.9",
-    "vitest": "^3"
+    "vitest": "^3",
+    "@briesa/accounts": "workspace:*"
   }
 }

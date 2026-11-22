@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { FINISHED_DELIVERY_TTL_MS, IDEMPOTENCY_TTL_MS } from "./types.ts";
 import type {
   ApiKeyRecord, AuditRecord, IdempotencyRecord, Store, Tenant, UsageEvent, UsageSummaryRow,
-  WebhookDelivery, WebhookEndpoint, WebhookEvent, PurgeResult,
+  WebhookDelivery, WebhookEndpoint, WebhookEvent, PurgeResult, TenantBillingPatch, TenantMember,
 } from "./types.ts";
 
 /** In-memory Store for tests and local dev. Same contract as PrismaStore. */
@@ -13,13 +13,52 @@ export class MemoryStore implements Store {
   private audits: AuditRecord[] = [];
   private idem: IdempotencyRecord[] = [];
 
-  async createTenant(input: { name: string; retentionDays?: number }) {
+  async createTenant(input: { name: string; retentionDays?: number; billingExempt?: boolean }) {
     const t: Tenant = {
-      id: randomUUID(), name: input.name,
-      retentionDays: input.retentionDays ?? 365, createdAt: new Date(),
+      id: randomUUID(), name: input.name, retentionDays: input.retentionDays ?? 365, createdAt: new Date(),
+      billingExempt: input.billingExempt ?? false, stripeCustomerId: null, subscriptionStatus: "none",
+      subscriptionId: null, planId: null, licensedPacks: [], currentPeriodEnd: null,
     };
     this.tenants.set(t.id, t);
     return t;
+  }
+  async updateTenantBilling(tenantId: string, patch: TenantBillingPatch) {
+    const t = this.tenants.get(tenantId);
+    if (!t) return false;
+    if (patch.stripeCustomerId) {
+      const clash = [...this.tenants.values()].some((x) => x.id !== tenantId && x.stripeCustomerId === patch.stripeCustomerId);
+      if (clash) throw new Error("stripe customer already linked"); // mirrors the unique index
+    }
+    Object.assign(t, patch);
+    return true;
+  }
+  async findTenantByStripeCustomer(customerId: string) {
+    return [...this.tenants.values()].find((t) => t.stripeCustomerId === customerId) ?? null;
+  }
+  private members: TenantMember[] = [];
+  private stripeEvents = new Set<string>();
+  async findMembershipByUser(userId: string) {
+    const member = this.members.find((m) => m.userId === userId);
+    const tenant = member ? this.tenants.get(member.tenantId) : undefined;
+    return member && tenant ? { member, tenant } : null;
+  }
+  async ensureTenantForUser(input: { userId: string; email: string; tenantName: string }) {
+    // No await between the check and the insert, so concurrent callers cannot both create a tenant.
+    const found = this.members.find((m) => m.userId === input.userId);
+    if (found) return { member: found, tenant: this.tenants.get(found.tenantId)!, created: false };
+    const tenant: Tenant = {
+      id: randomUUID(), name: input.tenantName, retentionDays: 365, createdAt: new Date(), billingExempt: false,
+      stripeCustomerId: null, subscriptionStatus: "none", subscriptionId: null, planId: null, licensedPacks: [], currentPeriodEnd: null,
+    };
+    this.tenants.set(tenant.id, tenant);
+    const member: TenantMember = { id: randomUUID(), tenantId: tenant.id, userId: input.userId, email: input.email, role: "owner", createdAt: new Date() };
+    this.members.push(member);
+    return { member, tenant, created: true };
+  }
+  async claimStripeEvent(eventId: string) {
+    if (this.stripeEvents.has(eventId)) return false;
+    this.stripeEvents.add(eventId);
+    return true;
   }
   async getTenant(id: string) { return this.tenants.get(id) ?? null; }
   async setTenantRetention(tenantId: string, retentionDays: number) {

@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 import type { ApiKeyRecord, Store } from "@briesa/db";
 import { ApiError, errorBody } from "./errors.ts";
+import { effectiveScopes, liveAccessAllowed } from "@briesa/accounts/billing";
 import { hasScope, hashKey, hashesEqual, parseKey } from "./keys.ts";
 import { MemoryRateLimiter, type RateLimiter } from "./ratelimit.ts";
 import { monthOf } from "./month.ts";
@@ -27,6 +28,8 @@ export interface RouteConfig {
 declare module "fastify" {
   interface FastifyRequest {
     auth?: ApiKeyRecord;
+    /** The key's real scopes after plan licensing is applied. Always use this, not auth.scopes. */
+    scopes: string[];
     packId?: string;
     reqId: string;
   }
@@ -37,6 +40,8 @@ export interface AppOptions {
   store: Store;
   rateLimiter?: RateLimiter;
   packs?: PackRegistry;
+  /** How long tenant billing state is cached by the auth hook (default 10 s). */
+  tenantCacheMs?: number;
   /** Directory packs are (re)loaded from by app.reloadPacks(). */
   packsDir?: string;
   webhooks?: WebhookService;
@@ -60,6 +65,14 @@ export { monthOf };
 export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
   const { store } = opts;
   const limiter = opts.rateLimiter ?? new MemoryRateLimiter();
+  const tenantCache = new Map<string, { at: number; tenant: Awaited<ReturnType<Store["getTenant"]>> }>();
+  const getTenant = async (id: string) => {
+    const hit = tenantCache.get(id);
+    if (hit && Date.now() - hit.at < (opts.tenantCacheMs ?? 10_000)) return hit.tenant;
+    const tenant = await store.getTenant(id);
+    tenantCache.set(id, { at: Date.now(), tenant });
+    return tenant;
+  };
 
   const app = Fastify({
     // Request IDs are server-generated; bodies and headers are never logged.
@@ -81,6 +94,7 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
   app.get("/v1/openapi.json", async () => openapi);
 
   app.decorateRequest("auth", undefined);
+  app.decorateRequest("scopes", undefined as unknown as string[]);
   app.decorateRequest("packId", undefined);
 
   app.addHook("onRequest", async (req, reply) => {
@@ -100,7 +114,14 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
       throw new ApiError("authentication_error", "invalid_api_key", "Missing or invalid API key.");
     }
     if (rec.revokedAt) throw new ApiError("authentication_error", "api_key_revoked", "This API key has been revoked.");
-    if (!hasScope(rec.scopes, cfg.scope)) {
+    // Billing and plan licensing. Tenant is cached briefly so subscription changes apply within seconds.
+    const tenant = await getTenant(rec.tenantId);
+    if (!tenant) throw new ApiError("authentication_error", "invalid_api_key", "Missing or invalid API key.");
+    if (rec.mode === "live" && !liveAccessAllowed(tenant)) {
+      throw new ApiError("permission_error", "subscription_required", "This tenant has no active subscription. Live keys need one; test keys are free.", 402);
+    }
+    const scopes = effectiveScopes(rec.scopes, tenant, rec.mode);
+    if (!hasScope(scopes, cfg.scope)) {
       throw new ApiError("permission_error", "missing_scope", `This key lacks the '${cfg.scope}' scope.`);
     }
 
@@ -112,6 +133,7 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
       throw new ApiError("rate_limit_error", "rate_limited", "Rate limit exceeded.");
     }
     req.auth = rec;
+    req.scopes = scopes;
     reply.header("x-briesa-mode", rec.mode);
   });
 

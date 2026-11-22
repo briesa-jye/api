@@ -150,6 +150,16 @@
               }
             }
           },
+          "402": {
+            "description": "Live keys need an active subscription (test keys are free); code `subscription_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Key lacks the required scope or pack licence",
             "content": {
@@ -210,6 +220,16 @@
           },
           "401": {
             "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Live keys need an active subscription (test keys are free); code `subscription_required`",
             "content": {
               "application/json": {
                 "schema": {
@@ -364,6 +384,16 @@
               }
             }
           },
+          "402": {
+            "description": "Live keys need an active subscription (test keys are free); code `subscription_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Key lacks the required scope or pack licence",
             "content": {
@@ -472,6 +502,16 @@
               }
             }
           },
+          "402": {
+            "description": "Live keys need an active subscription (test keys are free); code `subscription_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Key lacks the required scope or pack licence",
             "content": {
@@ -557,6 +597,16 @@
           },
           "401": {
             "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Live keys need an active subscription (test keys are free); code `subscription_required`",
             "content": {
               "application/json": {
                 "schema": {
@@ -686,6 +736,16 @@
               }
             }
           },
+          "402": {
+            "description": "Live keys need an active subscription (test keys are free); code `subscription_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Key lacks the required scope or pack licence",
             "content": {
@@ -756,6 +816,16 @@
           },
           "401": {
             "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Live keys need an active subscription (test keys are free); code `subscription_required`",
             "content": {
               "application/json": {
                 "schema": {
@@ -867,6 +937,16 @@
               }
             }
           },
+          "402": {
+            "description": "Live keys need an active subscription (test keys are free); code `subscription_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Key lacks the required scope or pack licence",
             "content": {
@@ -927,6 +1007,16 @@
           },
           "401": {
             "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Live keys need an active subscription (test keys are free); code `subscription_required`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1044,6 +1134,16 @@
               }
             }
           },
+          "402": {
+            "description": "Live keys need an active subscription (test keys are free); code `subscription_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Key lacks the required scope or pack licence",
             "content": {
@@ -1105,6 +1205,16 @@
           },
           "401": {
             "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Live keys need an active subscription (test keys are free); code `subscription_required`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1191,6 +1301,16 @@
               }
             }
           },
+          "402": {
+            "description": "Live keys need an active subscription (test keys are free); code `subscription_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Key lacks the required scope or pack licence",
             "content": {
@@ -1261,6 +1381,16 @@
           },
           "401": {
             "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Live keys need an active subscription (test keys are free); code `subscription_required`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1377,6 +1507,16 @@
               }
             }
           },
+          "402": {
+            "description": "Live keys need an active subscription (test keys are free); code `subscription_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Key lacks the required scope or pack licence",
             "content": {
@@ -1468,6 +1608,16 @@
               }
             }
           },
+          "402": {
+            "description": "Live keys need an active subscription (test keys are free); code `subscription_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Key lacks the required scope or pack licence",
             "content": {
@@ -1549,6 +1699,16 @@
           },
           "401": {
             "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Live keys need an active subscription (test keys are free); code `subscription_required`",
             "content": {
               "application/json": {
                 "schema": {

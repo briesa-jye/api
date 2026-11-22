@@ -3,7 +3,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { FINISHED_DELIVERY_TTL_MS, IDEMPOTENCY_TTL_MS } from "./types.ts";
 import type {
   ApiKeyRecord, AuditRecord, IdempotencyRecord, KeyMode, PurgeResult, Store, Tenant, UsageEvent, UsageSummaryRow,
-  WebhookDelivery, WebhookEndpoint, WebhookEvent,
+  WebhookDelivery, WebhookEndpoint, WebhookEvent, TenantBillingPatch, TenantMember,
 } from "./types.ts";
 
 export function createPrismaClient(databaseUrl: string): PrismaClient {
@@ -27,8 +27,41 @@ export class PrismaStore implements Store {
   disconnect() { return this.db.$disconnect(); }
 
   // --- tenants
-  async createTenant(input: { name: string; retentionDays?: number }): Promise<Tenant> {
-    return this.db.tenant.create({ data: { name: input.name, ...(input.retentionDays ? { retentionDays: input.retentionDays } : {}) } });
+  async createTenant(input: { name: string; retentionDays?: number; billingExempt?: boolean }): Promise<Tenant> {
+    return this.db.tenant.create({ data: { name: input.name, ...(input.retentionDays ? { retentionDays: input.retentionDays } : {}), billingExempt: input.billingExempt ?? false } });
+  }
+  async updateTenantBilling(tenantId: string, patch: TenantBillingPatch) {
+    return (await this.db.tenant.updateMany({ where: { id: tenantId }, data: patch })).count > 0;
+  }
+  async findTenantByStripeCustomer(customerId: string) {
+    return this.db.tenant.findUnique({ where: { stripeCustomerId: customerId } });
+  }
+  async findMembershipByUser(userId: string) {
+    const m = await this.db.tenantMember.findUnique({ where: { userId }, include: { tenant: true } });
+    if (!m) return null;
+    const { tenant, ...member } = m;
+    return { member: member as TenantMember, tenant };
+  }
+  async ensureTenantForUser(input: { userId: string; email: string; tenantName: string }) {
+    const existing = await this.findMembershipByUser(input.userId);
+    if (existing) return { ...existing, created: false };
+    try {
+      const r = await this.db.$transaction(async (tx) => {
+        const tenant = await tx.tenant.create({ data: { name: input.tenantName } });
+        const member = await tx.tenantMember.create({ data: { tenantId: tenant.id, userId: input.userId, email: input.email, role: "owner" } });
+        return { tenant, member: member as TenantMember };
+      });
+      return { ...r, created: true };
+    } catch (e) {
+      if (!isUnique(e)) throw e;
+      const again = await this.findMembershipByUser(input.userId); // lost a race with a concurrent sign-in
+      if (!again) throw e;
+      return { ...again, created: false };
+    }
+  }
+  async claimStripeEvent(eventId: string) {
+    try { await this.db.stripeEvent.create({ data: { id: eventId } }); return true; }
+    catch (e) { if (isUnique(e)) return false; throw e; }
   }
   async getTenant(id: string) { return this.db.tenant.findUnique({ where: { id } }); }
   async setTenantRetention(tenantId: string, retentionDays: number) {

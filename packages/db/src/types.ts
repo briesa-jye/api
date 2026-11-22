@@ -1,9 +1,33 @@
 export type KeyMode = "test" | "live";
 
+export const SUBSCRIPTION_STATUSES = ["none", "trialing", "active", "past_due", "canceled", "unpaid", "incomplete", "incomplete_expired", "paused"] as const;
+export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
+
 export interface Tenant {
   id: string;
   name: string;
   retentionDays: number;
+  createdAt: Date;
+  /** Provisioned by Briesa (design partners, enterprise, internal): live keys work without a Stripe subscription. */
+  billingExempt: boolean;
+  stripeCustomerId: string | null;
+  subscriptionStatus: string;
+  subscriptionId: string | null;
+  planId: string | null;
+  /** Pack ids the subscription licenses, or ["*"] for all. Ignored for billingExempt tenants and for test keys. */
+  licensedPacks: string[];
+  currentPeriodEnd: Date | null;
+}
+
+export type TenantBillingPatch = Partial<Pick<Tenant, "stripeCustomerId" | "subscriptionStatus" | "subscriptionId" | "planId" | "licensedPacks" | "currentPeriodEnd" | "billingExempt">>;
+
+/** A dashboard user (Supabase Auth user id) and the tenant they manage. */
+export interface TenantMember {
+  id: string;
+  tenantId: string;
+  userId: string;
+  email: string;
+  role: string;
   createdAt: Date;
 }
 
@@ -103,7 +127,15 @@ export interface WebhookDelivery {
  * The only global lookup is findApiKeyByPrefix, needed to authenticate.
  */
 export interface Store {
-  createTenant(input: { name: string; retentionDays?: number }): Promise<Tenant>;
+  createTenant(input: { name: string; retentionDays?: number; billingExempt?: boolean }): Promise<Tenant>;
+  updateTenantBilling(tenantId: string, patch: TenantBillingPatch): Promise<boolean>;
+  /** System lookups used by the dashboard and the Stripe webhook. */
+  findTenantByStripeCustomer(customerId: string): Promise<Tenant | null>;
+  findMembershipByUser(userId: string): Promise<{ member: TenantMember; tenant: Tenant } | null>;
+  /** Returns the user's tenant, creating tenant + owner membership (atomically) on first sign-in. */
+  ensureTenantForUser(input: { userId: string; email: string; tenantName: string }): Promise<{ member: TenantMember; tenant: Tenant; created: boolean }>;
+  /** True the first time an event id is seen, false for replays. */
+  claimStripeEvent(eventId: string): Promise<boolean>;
   getTenant(tenantId: string): Promise<Tenant | null>;
   setTenantRetention(tenantId: string, retentionDays: number): Promise<boolean>;
   /**

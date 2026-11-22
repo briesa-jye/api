@@ -11,7 +11,7 @@ async function boot(scopes: string[] = ["assess", "read", "audit:read", "pack:*"
   const { root } = makeWidgetPack({ status });
   const store = new MemoryStore();
   const app = await buildApp({ store, packs: PackRegistry.fromDir(root) });
-  const t = await store.createTenant({ name: "T" });
+  const t = await store.createTenant({ name: "T", billingExempt: true });
   const g = generateKey(mode);
   await store.createApiKey({ tenantId: t.id, name: "k", prefix: g.prefix, hash: g.hash, mode, scopes, rateLimitPerMinute: 1000, rotatedFromId: null });
   const h = { authorization: `Bearer ${g.key}` };

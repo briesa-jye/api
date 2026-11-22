@@ -12,6 +12,7 @@
     "zod": "^4",
     "@briesa/engine": "workspace:*",
     "@briesa/packs": "workspace:*",
-    "@briesa/ai": "workspace:*"
+    "@briesa/ai": "workspace:*",
+    "@briesa/accounts": "workspace:*"
   }
 }

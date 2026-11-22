@@ -25,7 +25,7 @@ async function boot(opts: { respond?: (c: Call) => number } = {}) {
   const webhooks = new WebhookService(store, { fetch: fakeFetch, resolver: async () => ["93.184.216.34"], now: () => now });
   const registry = PackRegistry.fromDir(root);
   const app = await buildApp({ store, packs: registry, packsDir: root, webhooks });
-  const tenants = { a: await store.createTenant({ name: "A" }), b: await store.createTenant({ name: "B" }) };
+  const tenants = { a: await store.createTenant({ name: "A", billingExempt: true }), b: await store.createTenant({ name: "B", billingExempt: true }) };
   const mint = async (tenantId: string, scopes: string[], mode: "test" | "live" = "live") => {
     const g = generateKey(mode);
     await store.createApiKey({ tenantId, name: "k", prefix: g.prefix, hash: g.hash, mode, scopes, rateLimitPerMinute: 1000, rotatedFromId: null });

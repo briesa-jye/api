@@ -1,0 +1,17 @@
+{
+  "name": "@briesa/accounts",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./keys": "./src/keys.ts",
+    "./provision": "./src/provision.ts",
+    "./ssrf": "./src/ssrf.ts",
+    "./sign": "./src/sign.ts",
+    "./manage": "./src/manage.ts",
+    "./billing": "./src/billing.ts"
+  },
+  "dependencies": {
+    "@briesa/db": "workspace:*",
+    "zod": "^4"
+  }
+}

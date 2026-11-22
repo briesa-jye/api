@@ -48,7 +48,7 @@ describe("shipped packs", () => {
 async function boot() {
   const store = new MemoryStore();
   const app = await buildApp({ store, packs: PackRegistry.fromDir(packsDir) });
-  const t = await store.createTenant({ name: "T" });
+  const t = await store.createTenant({ name: "T", billingExempt: true });
   const g = generateKey("test");
   await store.createApiKey({ tenantId: t.id, name: "k", prefix: g.prefix, hash: g.hash, mode: "test", scopes: ["assess", "read", "pack:*"], rateLimitPerMinute: 1000, rotatedFromId: null });
   const h = { authorization: `Bearer ${g.key}` };

@@ -55,7 +55,7 @@ const OPS: Op[] = [
 ];
 
 const ERR_DESC: Record<string, string> = {
-  "400": "Invalid request (type `invalid_request_error`)", "401": "Missing, invalid or revoked API key", "403": "Key lacks the required scope or pack licence",
+  "400": "Invalid request (type `invalid_request_error`)", "401": "Missing, invalid or revoked API key", "402": "Live keys need an active subscription (test keys are free); code `subscription_required`", "403": "Key lacks the required scope or pack licence",
   "404": "Not found. Packs you are not licensed for also return 404.", "409": "Idempotency-Key reused with a different request", "429": "Rate limit exceeded; see Retry-After",
 };
 
@@ -65,7 +65,7 @@ export function buildOpenApi(): Obj {
   const paths: Record<string, Obj> = {};
   for (const o of OPS) {
     const errors = new Set(o.errors ?? []);
-    if (o.scope) { errors.add("401"); errors.add("403"); errors.add("429"); }
+    if (o.scope) { errors.add("401"); errors.add("402"); errors.add("403"); errors.add("429"); }
     const responses: Obj = { [o.status ?? "200"]: o.ok };
     for (const e of [...errors].sort()) responses[e] = errorResp(ERR_DESC[e]!);
     const parameters = [...(o.params ?? [])];

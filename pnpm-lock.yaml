@@ -175,6 +175,9 @@ importers:
 
   .:
     devDependencies:
+      '@briesa/accounts':
+        specifier: workspace:*
+        version: link:packages/accounts
       '@briesa/ai':
         specifier: workspace:*
         version: link:packages/ai
@@ -214,6 +217,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@briesa/accounts':
+        specifier: workspace:*
+        version: link:../../packages/accounts
       '@briesa/ai':
         specifier: workspace:*
         version: link:../../packages/ai
@@ -238,6 +244,15 @@ importers:
       '@briesa/packs':
         specifier: workspace:*
         version: link:../packages/packs
+
+  packages/accounts:
+    dependencies:
+      '@briesa/db':
+        specifier: workspace:*
+        version: link:../db
+      zod:
+        specifier: ^4
+        version: 4.6.7
 
   packages/ai:
     dependencies:

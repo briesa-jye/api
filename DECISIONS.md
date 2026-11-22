@@ -25,6 +25,15 @@ Defaults chosen by the build, as agreed with Jye. Change any of these before pro
 - Unlicensed packs return 404, not 403, so pack ids aren't enumerable.
 - Packs load once at startup; `rules.updated` / `pack.updated` webhooks and hot reload come with webhooks.
 
+## Phase 6 decisions (website, accounts, billing)
+- **Hosting split:** the website and dashboard (`apps/web`, Next.js) deploy to Vercel at api.briesa.com; the API (`apps/api`) runs on its own Sydney Node host at a separate hostname. The dashboard talks to the same Postgres directly through shared code in `packages/accounts`, not through the API.
+- **Free sandbox, paid live:** test keys always work (all packs, not billed). Live keys need `billingExempt` or a subscription in `active`, `trialing` or `past_due` (past_due allowed while Stripe retries). Otherwise the API returns **402 `subscription_required`**.
+- **Plans license packs:** `Tenant.licensedPacks` (`["*"]` = all) is intersected with a live key's pack scopes on every request, so a plan change applies to existing keys within about 10 seconds (the tenant cache). Test keys ignore licensing.
+- **Billing-exempt tenants** are those created by `pnpm tenant:create` (design partners, internal) unless `--require-subscription` is passed. Self-serve sign-ups are not exempt.
+- Self-serve tenants are created on first sign-in with one owner (`TenantMember`, Supabase Auth user id). One tenant per user for now; no team invites.
+- Key and webhook management rules live in `@briesa/accounts/manage`, used by both the API routes and the dashboard, so they cannot drift.
+- No prices are hard-coded anywhere. Plans come from Stripe prices configured by environment variable.
+
 ## Phase 5 decisions (persistence)
 - `PrismaStore` (Postgres via `@prisma/adapter-pg`) implements the same `Store` contract as `MemoryStore`. One contract test suite runs against both; the Prisma side runs on **PGlite** (real Postgres compiled to WASM) using the project's actual migration SQL. It has **not** been run against a hosted Postgres or through the production `pg` driver, and `prisma migrate deploy` has not been run (no database was available).
 - Migrations: `0001_init` is generated from the schema; `0002_audit_immutability` is hand-written. A trigger makes `AuditRecord` immutable: UPDATE is always rejected and DELETE is rejected unless the transaction sets `briesa.retention = 'on'`, which only the retention job and tenant erasure do. This holds even against raw SQL.

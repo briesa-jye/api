@@ -44,7 +44,7 @@ describe("OpenAPI 3.1 document", () => {
       for (const [m, op] of Object.entries(ops as Record<string, any>)) {
         if (op["x-required-scope"]) {
           expect(op.security, `${m} ${path}`).toEqual([{ bearerAuth: [] }]);
-          for (const c of ["401", "403", "429"]) expect(op.responses[c], `${m} ${path} ${c}`).toBeDefined();
+          for (const c of ["401", "402", "403", "429"]) expect(op.responses[c], `${m} ${path} ${c}`).toBeDefined();
         } else expect(op.security, `${m} ${path}`).toEqual([]);
       }
     }
@@ -77,7 +77,7 @@ describe("documented webhook payloads match what is really sent", () => {
     const bodies: any[] = [];
     const webhooks = new WebhookService(store, { fetch: (async (_u: string, i: RequestInit) => { bodies.push(JSON.parse(i.body as string)); return new Response(null); }) as unknown as typeof fetch, resolver: async () => ["93.184.216.34"] });
     const app = await buildApp({ store, packs: PackRegistry.fromDir(root), webhooks });
-    const t = await store.createTenant({ name: "T" });
+    const t = await store.createTenant({ name: "T", billingExempt: true });
     const g = generateKey("live");
     await store.createApiKey({ tenantId: t.id, name: "k", prefix: g.prefix, hash: g.hash, mode: "live", scopes: ["*"], rateLimitPerMinute: 100, rotatedFromId: null });
     const h = { authorization: `Bearer ${g.key}` };

@@ -105,7 +105,7 @@ describe("AI notes through the API", () => {
     const { root } = makeWidgetPack();
     const store = new MemoryStore();
     const app = await buildApp({ store, packs: PackRegistry.fromDir(root), ai });
-    const t = await store.createTenant({ name: "T" });
+    const t = await store.createTenant({ name: "T", billingExempt: true });
     const g = generateKey("live");
     await store.createApiKey({ tenantId: t.id, name: "k", prefix: g.prefix, hash: g.hash, mode: "live", scopes: ["assess", "pack:*"], rateLimitPerMinute: 1000, rotatedFromId: null });
     const h = { authorization: `Bearer ${g.key}` };

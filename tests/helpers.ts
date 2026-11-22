@@ -13,7 +13,7 @@ export async function setup() {
     calls++;
     const packId = (req.body as { pack?: string } | null)?.pack;
     if (packId) {
-      if (!hasPackAccess(req.auth!.scopes, packId)) {
+      if (!hasPackAccess(req.scopes, packId)) {
         throw new ApiError("permission_error", "pack_not_licensed", "Pack not licensed.");
       }
       req.packId = packId;
@@ -28,8 +28,8 @@ export async function setup() {
     });
     return g.key;
   };
-  const tenantA = await store.createTenant({ name: "A" });
-  const tenantB = await store.createTenant({ name: "B" });
+  const tenantA = await store.createTenant({ name: "A", billingExempt: true });
+  const tenantB = await store.createTenant({ name: "B", billingExempt: true });
   const auth = (key: string, extra: Record<string, string> = {}) => ({
     authorization: `Bearer ${key}`, ...extra,
   });

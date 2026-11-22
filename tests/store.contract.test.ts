@@ -141,6 +141,39 @@ for (const f of storeFactories) {
       expect(await store.getAudit(A, "a1")).toBeNull();
     });
 
+    it("billing: defaults, updates, array round trip, unique Stripe customer, lookup", async () => {
+      expect(await store.getTenant(A)).toMatchObject({ billingExempt: false, subscriptionStatus: "none", stripeCustomerId: null, planId: null, licensedPacks: [], currentPeriodEnd: null });
+      const end = new Date("2027-01-01T00:00:00Z");
+      expect(await store.updateTenantBilling(A, { stripeCustomerId: "cus_1", subscriptionStatus: "active", subscriptionId: "sub_1", planId: "pro", licensedPacks: ["p1", "p2"], currentPeriodEnd: end })).toBe(true);
+      expect(await store.getTenant(A)).toMatchObject({ subscriptionStatus: "active", planId: "pro", licensedPacks: ["p1", "p2"], stripeCustomerId: "cus_1" });
+      expect((await store.getTenant(A))?.currentPeriodEnd?.getTime()).toBe(end.getTime());
+      expect((await store.findTenantByStripeCustomer("cus_1"))?.id).toBe(A);
+      expect(await store.findTenantByStripeCustomer("cus_none")).toBeNull();
+      await expect(store.updateTenantBilling(B, { stripeCustomerId: "cus_1" })).rejects.toThrow();
+      expect(await store.updateTenantBilling("nope", { planId: "x" })).toBe(false);
+      expect((await store.createTenant({ name: "Exempt", billingExempt: true })).billingExempt).toBe(true);
+    });
+
+    it("members: first sign-in creates tenant and owner once, even concurrently; users stay separate", async () => {
+      const results = await Promise.all(Array.from({ length: 5 }, () => store.ensureTenantForUser({ userId: "user-1", email: "a@example.com", tenantName: "Acme" })));
+      expect(new Set(results.map((r) => r.tenant.id)).size).toBe(1);
+      expect(results.filter((r) => r.created)).toHaveLength(1);
+      const again = await store.ensureTenantForUser({ userId: "user-1", email: "a@example.com", tenantName: "Ignored" });
+      expect(again.created).toBe(false);
+      expect(again.tenant.name).toBe("Acme");
+      expect(again.member).toMatchObject({ userId: "user-1", email: "a@example.com", role: "owner" });
+      const other = await store.ensureTenantForUser({ userId: "user-2", email: "b@example.com", tenantName: "Beta" });
+      expect(other.tenant.id).not.toBe(again.tenant.id);
+      expect((await store.findMembershipByUser("user-2"))?.tenant.name).toBe("Beta");
+      expect(await store.findMembershipByUser("nobody")).toBeNull();
+    });
+
+    it("stripe events are claimed once", async () => {
+      expect(await store.claimStripeEvent("evt_1")).toBe(true);
+      expect(await store.claimStripeEvent("evt_1")).toBe(false);
+      expect(await store.claimStripeEvent("evt_2")).toBe(true);
+    });
+
     it("erasure: removes one tenant's assessment data and nothing else", async () => {
       await store.appendAudit(audit(A, "a1")); await store.appendAudit(audit(B, "b1"));
       await store.saveIdempotency({ tenantId: A, key: "k", requestHash: "h", status: 200, responseBody: "{}" });
