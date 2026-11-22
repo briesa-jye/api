@@ -75,3 +75,34 @@ model IdempotencyRecord {
 
   @@unique([tenantId, key])
 }
+
+model WebhookEndpoint {
+  id         String    @id @default(cuid())
+  tenantId   String
+  url        String
+  events     String[]
+  packs      String[]
+  secret     String // TODO: encrypt at rest (needed in plaintext to sign)
+  createdAt  DateTime  @default(now())
+  disabledAt DateTime?
+
+  @@index([tenantId])
+}
+
+model WebhookDelivery {
+  id             String    @id @default(cuid())
+  tenantId       String
+  endpointId     String
+  event          String
+  payload        String
+  status         String // pending | succeeded | failed
+  attempts       Int       @default(0)
+  lastStatusCode Int?
+  lastError      String?
+  nextAttemptAt  DateTime?
+  createdAt      DateTime  @default(now())
+  deliveredAt    DateTime?
+
+  @@index([status, nextAttemptAt])
+  @@index([tenantId, endpointId])
+}

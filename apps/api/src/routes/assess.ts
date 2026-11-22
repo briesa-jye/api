@@ -7,6 +7,7 @@ import type { Store } from "@briesa/db";
 import { ApiError } from "../errors.ts";
 import { hasPackAccess } from "../keys.ts";
 import { todayAU } from "../month.ts";
+import type { WebhookService } from "../webhooks/service.ts";
 
 export const DISCLAIMER =
   "Decision-support only. This is an AI-assisted assessment of the information supplied, not legal advice. " +
@@ -24,7 +25,7 @@ const stable = (v: unknown): string =>
   : v && typeof v === "object" ? `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${stable((v as Record<string, unknown>)[k])}`).join(",")}}`
   : JSON.stringify(v) ?? "null";
 
-export const assessRoutes: FastifyPluginAsync<{ packs: PackRegistry; store: Store }> = async (app, { packs, store }) => {
+export const assessRoutes: FastifyPluginAsync<{ packs: PackRegistry; store: Store; webhooks: WebhookService }> = async (app, { packs, store, webhooks }) => {
   app.post("/v1/assess", { config: { scope: "assess", billable: "assess" } }, async (req) => {
     const parsed = body.safeParse(req.body);
     if (!parsed.success) {
@@ -71,6 +72,14 @@ export const assessRoutes: FastifyPluginAsync<{ packs: PackRegistry; store: Stor
       inputsHash: createHash("sha256").update(stable(b.inputs)).digest("hex"), // raw inputs are never stored
       output: response, model: null, test: req.auth!.mode === "test",
     });
+    // Event carries outcome metadata only: never raw inputs.
+    await webhooks.emit({
+      event: "assessment.completed", tenantId: req.auth!.tenantId, packId: m.id, livemode: req.auth!.mode === "live",
+      data: {
+        request_id: req.id, pack: response.pack, scenario_type: b.scenario_type, jurisdiction: b.jurisdiction,
+        outcome: r.outcome, escalation_recommended: r.escalation_recommended, human_review_recommended: response.human_review_recommended,
+      },
+    }).catch((e) => req.log.error({ err: { name: (e as Error).name } }, "webhook emit failed"));
     return response;
   });
 };

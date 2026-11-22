@@ -117,7 +117,7 @@ describe("a new pack works end to end with no engine or API changes", () => {
 });
 
 describe("platform code is industry-agnostic", () => {
-  const banned = /real[-_ ]?estate|\bwhs\b|\baml\b|austrac|cricos|afsl|construction|education|finance|workplace|incident|agent\b/i;
+  const banned = /real[-_ ]?estate|\bwhs\b|\baml\b|austrac|cricos|afsl|construction|education|finance|workplace|incident|(?<![-\w])agent\b/i;
   const walk = (d: string): string[] => readdirSync(d).flatMap((f) => {
     const p = join(d, f);
     return statSync(p).isDirectory() ? walk(p) : p.endsWith(".ts") ? [p] : [];

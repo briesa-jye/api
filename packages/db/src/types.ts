@@ -62,6 +62,37 @@ export interface UsageSummaryRow {
   count: number;
 }
 
+export const WEBHOOK_EVENTS = ["assessment.completed", "rules.updated", "pack.updated"] as const;
+export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number];
+
+export interface WebhookEndpoint {
+  id: string;
+  tenantId: string;
+  url: string;
+  events: WebhookEvent[];
+  /** Pack ids this endpoint receives events for, or ["*"] for every pack the tenant can access. */
+  packs: string[];
+  secret: string;
+  createdAt: Date;
+  disabledAt: Date | null;
+}
+
+export interface WebhookDelivery {
+  id: string;
+  tenantId: string;
+  endpointId: string;
+  event: WebhookEvent;
+  /** JSON envelope, signed at send time. Contains no raw caller inputs. */
+  payload: string;
+  status: "pending" | "succeeded" | "failed";
+  attempts: number;
+  lastStatusCode: number | null;
+  lastError: string | null;
+  nextAttemptAt: Date | null;
+  createdAt: Date;
+  deliveredAt: Date | null;
+}
+
 /**
  * Every method that touches tenant data takes tenantId and must filter by it.
  * The only global lookup is findApiKeyByPrefix, needed to authenticate.
@@ -83,4 +114,17 @@ export interface Store {
 
   getIdempotency(tenantId: string, key: string): Promise<IdempotencyRecord | null>;
   saveIdempotency(record: Omit<IdempotencyRecord, "createdAt">): Promise<void>;
+
+  createWebhookEndpoint(input: Omit<WebhookEndpoint, "id" | "createdAt" | "disabledAt">): Promise<WebhookEndpoint>;
+  listWebhookEndpoints(tenantId: string): Promise<WebhookEndpoint[]>;
+  disableWebhookEndpoint(tenantId: string, id: string): Promise<boolean>;
+  listWebhookDeliveries(tenantId: string, endpointId: string, limit: number): Promise<WebhookDelivery[]>;
+
+  /** System-level (cross-tenant), used only by the event emitter and delivery worker. */
+  systemListWebhookEndpoints(event: WebhookEvent): Promise<WebhookEndpoint[]>;
+  systemGetWebhookEndpoint(id: string): Promise<WebhookEndpoint | null>;
+  createWebhookDelivery(input: Omit<WebhookDelivery, "id" | "createdAt" | "deliveredAt" | "attempts" | "lastStatusCode" | "lastError" | "status">): Promise<WebhookDelivery>;
+  /** Atomically claims due pending deliveries by pushing nextAttemptAt out by leaseMs. */
+  claimDueWebhookDeliveries(now: Date, limit: number, leaseMs: number): Promise<WebhookDelivery[]>;
+  updateWebhookDelivery(id: string, patch: Partial<Pick<WebhookDelivery, "status" | "attempts" | "lastStatusCode" | "lastError" | "nextAttemptAt" | "deliveredAt">>): Promise<void>;
 }

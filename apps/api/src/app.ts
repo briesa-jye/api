@@ -5,7 +5,9 @@ import { ApiError, errorBody } from "./errors.ts";
 import { hasScope, hashKey, hashesEqual, parseKey } from "./keys.ts";
 import { MemoryRateLimiter, type RateLimiter } from "./ratelimit.ts";
 import { monthOf } from "./month.ts";
-import { PackRegistry } from "@briesa/packs";
+import { diffRegistries, PackRegistry } from "@briesa/packs";
+import { WebhookService } from "./webhooks/service.ts";
+import { webhookRoutes } from "./routes/webhooks.ts";
 import { assessRoutes } from "./routes/assess.ts";
 import { packRoutes } from "./routes/packs.ts";
 import { keyRoutes } from "./routes/keys.ts";
@@ -33,7 +35,18 @@ export interface AppOptions {
   store: Store;
   rateLimiter?: RateLimiter;
   packs?: PackRegistry;
+  /** Directory packs are (re)loaded from by app.reloadPacks(). */
+  packsDir?: string;
+  webhooks?: WebhookService;
   logger?: boolean;
+}
+
+declare module "fastify" {
+  interface FastifyInstance {
+    webhooks: WebhookService;
+    /** Reload packs from packsDir; emits pack.updated / rules.updated. Keeps the old packs if the new ones are invalid. */
+    reloadPacks(): Promise<{ changed: number }>;
+  }
 }
 
 export { monthOf };
@@ -150,8 +163,26 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
 
   await app.register(metaRoutes, { store });
   const packs = opts.packs ?? PackRegistry.empty();
+  const webhooks = opts.webhooks ?? new WebhookService(store);
+  app.decorate("webhooks", webhooks);
+  app.decorate("reloadPacks", async () => {
+    if (!opts.packsDir) throw new Error("packsDir not configured");
+    const next = PackRegistry.fromDir(opts.packsDir); // throws on a broken pack: old packs stay live
+    const changes = diffRegistries(packs, next);
+    packs.replaceWith(next);
+    for (const c of changes) {
+      if (c.pack) {
+        await webhooks.emit({ event: "pack.updated", tenantId: null, packId: c.packId, data: { pack: c.packId, change: c.pack, from: c.from, to: c.to } });
+      }
+      if (c.rules.added.length || c.rules.changed.length || c.rules.removed.length) {
+        await webhooks.emit({ event: "rules.updated", tenantId: null, packId: c.packId, data: { pack: c.packId, version: c.to?.version ?? null, rules: c.rules } });
+      }
+    }
+    return { changed: changes.length };
+  });
   await app.register(keyRoutes, { store });
+  await app.register(webhookRoutes, { store, packs });
   await app.register(packRoutes, { packs });
-  await app.register(assessRoutes, { packs, store });
+  await app.register(assessRoutes, { packs, store, webhooks });
   return app;
 }

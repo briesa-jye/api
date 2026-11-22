@@ -20,6 +20,8 @@ export class PackRegistry {
     if (this.packs.has(pack.manifest.id)) throw new Error(`duplicate pack id '${pack.manifest.id}'`);
     this.packs.set(pack.manifest.id, pack);
   }
+  /** Swap contents in place so existing references (routes) see the new packs. */
+  replaceWith(other: PackRegistry) { this.packs = new Map(other.packs); }
   get(id: string) { return this.packs.get(id) ?? null; }
   list() { return [...this.packs.values()]; }
 }
