@@ -1,0 +1,2893 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Briesa Compliance API",
+    "version": "0.1.0",
+    "summary": "Australian compliance decision support, delivered as industry packs.",
+    "description": "Decision support, not legal advice. Every assessment is produced by versioned, sourced rules and returns reasons with rule ids, versions, sources and effective dates. AI is optional, labelled, and never makes a regulatory decision. Check each response's `pack.status`: only `verified` packs are production-ready. See the versioning and deprecation policy in the docs."
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com",
+      "description": "Replace with your deployment (no hosted environment exists yet)"
+    },
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Meta"
+    },
+    {
+      "name": "Packs"
+    },
+    {
+      "name": "Assessments"
+    },
+    {
+      "name": "Rules"
+    },
+    {
+      "name": "Obligations"
+    },
+    {
+      "name": "Audit"
+    },
+    {
+      "name": "Usage"
+    },
+    {
+      "name": "API keys"
+    },
+    {
+      "name": "Webhooks"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "health",
+        "summary": "Health check",
+        "tags": [
+          "Meta"
+        ],
+        "security": [],
+        "x-required-scope": null,
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/openapi.json": {
+      "get": {
+        "operationId": "getOpenApi",
+        "summary": "This OpenAPI document",
+        "tags": [
+          "Meta"
+        ],
+        "security": [],
+        "x-required-scope": null,
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/packs": {
+      "get": {
+        "operationId": "listPacks",
+        "summary": "List packs available to your key",
+        "tags": [
+          "Packs"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-scope": "read",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "packs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Pack"
+                      }
+                    }
+                  },
+                  "required": [
+                    "packs"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Key lacks the required scope or pack licence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/packs/{id}": {
+      "get": {
+        "operationId": "getPack",
+        "summary": "Get a pack with its scenario types and input schemas",
+        "tags": [
+          "Packs"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-scope": "read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Pack id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Key lacks the required scope or pack licence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Packs you are not licensed for also return 404.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assess": {
+      "post": {
+        "operationId": "assess",
+        "summary": "Run an assessment",
+        "description": "Validates `inputs` against the pack's schema for `scenario_type`, runs the pack's versioned rules, and returns an explainable result. Decision support only: every response carries a disclaimer and a `human_review_recommended` flag, and the result always includes the pack's maturity status. Billable on live keys.",
+        "tags": [
+          "Assessments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-scope": "assess",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Repeating a request with the same key and body returns the original response (header `Idempotent-Replayed: true`). Keys are per tenant.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pack": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "scenario_type": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "jurisdiction": {
+                    "type": "string",
+                    "enum": [
+                      "AU",
+                      "ACT",
+                      "NSW",
+                      "NT",
+                      "QLD",
+                      "SA",
+                      "TAS",
+                      "VIC",
+                      "WA"
+                    ]
+                  },
+                  "inputs": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {}
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "ai_notes": {
+                        "type": "boolean"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "pack",
+                  "scenario_type",
+                  "jurisdiction",
+                  "inputs"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request (type `invalid_request_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Key lacks the required scope or pack licence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Packs you are not licensed for also return 404.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency-Key reused with a different request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/rules": {
+      "get": {
+        "operationId": "listRules",
+        "summary": "List rule definitions",
+        "tags": [
+          "Rules"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-scope": "read",
+        "parameters": [
+          {
+            "name": "pack",
+            "in": "query",
+            "required": false,
+            "description": "Limit to one pack",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "active, needs_review or retired",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "rules": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PackRule"
+                      }
+                    }
+                  },
+                  "required": [
+                    "rules"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Key lacks the required scope or pack licence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Packs you are not licensed for also return 404.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/rules/{id}": {
+      "get": {
+        "operationId": "getRule",
+        "summary": "Get all versions of a rule",
+        "tags": [
+          "Rules"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-scope": "read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Rule id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "versions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PackRule"
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "versions"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Key lacks the required scope or pack licence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Packs you are not licensed for also return 404.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/obligations": {
+      "get": {
+        "operationId": "listObligations",
+        "summary": "List obligations in force",
+        "description": "Obligations with source references, effective dates and deadlines. Defaults to today's date in Australia/Sydney.",
+        "tags": [
+          "Obligations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-scope": "read",
+        "parameters": [
+          {
+            "name": "pack",
+            "in": "query",
+            "required": false,
+            "description": "Limit to one pack",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "activity",
+            "in": "query",
+            "required": false,
+            "description": "Entity type or activity tag, e.g. pcbu",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "jurisdiction",
+            "in": "query",
+            "required": false,
+            "description": "ACT, NSW, NT, QLD, SA, TAS, VIC or WA",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "description": "YYYY-MM-DD",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "as_of": {
+                      "type": "string"
+                    },
+                    "obligations": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PackObligation"
+                      }
+                    }
+                  },
+                  "required": [
+                    "as_of",
+                    "obligations"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Key lacks the required scope or pack licence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Packs you are not licensed for also return 404.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/audit/{request_id}": {
+      "get": {
+        "operationId": "getAudit",
+        "summary": "Get the stored audit record for a past call",
+        "tags": [
+          "Audit"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-scope": "audit:read",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "description": "The request_id returned by the original call",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditRecord"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Key lacks the required scope or pack licence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Packs you are not licensed for also return 404.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/usage": {
+      "get": {
+        "operationId": "getUsage",
+        "summary": "Billable usage for a month",
+        "tags": [
+          "Usage"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-scope": "read",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "description": "YYYY-MM, defaults to the current month",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "month": {
+                      "type": "string"
+                    },
+                    "usage": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/UsageRow"
+                      }
+                    }
+                  },
+                  "required": [
+                    "month",
+                    "usage"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request (type `invalid_request_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Key lacks the required scope or pack licence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/keys": {
+      "get": {
+        "operationId": "listKeys",
+        "summary": "List API keys",
+        "tags": [
+          "API keys"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-scope": "keys:manage",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "keys": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ApiKey"
+                      }
+                    }
+                  },
+                  "required": [
+                    "keys"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Key lacks the required scope or pack licence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createKey",
+        "summary": "Create an API key",
+        "description": "The plaintext key is returned once and cannot be retrieved again. A key can only grant scopes it holds itself.",
+        "tags": [
+          "API keys"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-scope": "keys:manage",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "test",
+                      "live"
+                    ]
+                  },
+                  "scopes": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^(\\*|assess|read|audit:read|keys:manage|webhooks|pack:[a-z0-9-]+|pack:\\*)$"
+                    }
+                  },
+                  "rate_limit_per_minute": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  }
+                },
+                "required": [
+                  "name",
+                  "mode",
+                  "scopes"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyCreated"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request (type `invalid_request_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Key lacks the required scope or pack licence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/keys/{id}/rotate": {
+      "post": {
+        "operationId": "rotateKey",
+        "summary": "Rotate a key",
+        "description": "Creates a replacement with the same scopes and mode and revokes the old key immediately.",
+        "tags": [
+          "API keys"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-scope": "keys:manage",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Key id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyCreated"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Key lacks the required scope or pack licence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Packs you are not licensed for also return 404.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/keys/{id}/revoke": {
+      "post": {
+        "operationId": "revokeKey",
+        "summary": "Revoke a key",
+        "tags": [
+          "API keys"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-scope": "keys:manage",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Key id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKey"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Key lacks the required scope or pack licence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Packs you are not licensed for also return 404.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhooks": {
+      "get": {
+        "operationId": "listWebhooks",
+        "summary": "List webhook endpoints",
+        "tags": [
+          "Webhooks"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-scope": "webhooks",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "webhooks": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Webhook"
+                      }
+                    }
+                  },
+                  "required": [
+                    "webhooks"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Key lacks the required scope or pack licence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createWebhook",
+        "summary": "Register a webhook endpoint",
+        "description": "The signing secret is returned once. URLs must be https and publicly reachable. Deliveries are signed (see the `webhooks` section) and retried with backoff.",
+        "tags": [
+          "Webhooks"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-scope": "webhooks",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "events": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "assessment.completed",
+                        "rules.updated",
+                        "pack.updated"
+                      ]
+                    }
+                  },
+                  "packs": {
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "required": [
+                  "url",
+                  "events"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookCreated"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request (type `invalid_request_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Key lacks the required scope or pack licence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Packs you are not licensed for also return 404.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhooks/{id}": {
+      "delete": {
+        "operationId": "deleteWebhook",
+        "summary": "Delete a webhook endpoint",
+        "description": "Pending deliveries to it are cancelled.",
+        "tags": [
+          "Webhooks"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-scope": "webhooks",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Webhook id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "deleted": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "deleted"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Key lacks the required scope or pack licence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Packs you are not licensed for also return 404.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhooks/{id}/deliveries": {
+      "get": {
+        "operationId": "listWebhookDeliveries",
+        "summary": "Delivery log for a webhook (latest 50)",
+        "tags": [
+          "Webhooks"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-scope": "webhooks",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Webhook id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deliveries": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/WebhookDelivery"
+                      }
+                    }
+                  },
+                  "required": [
+                    "deliveries"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Key lacks the required scope or pack licence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Packs you are not licensed for also return 404.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; see Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {
+    "assessment.completed": {
+      "post": {
+        "operationId": "assessment.completed",
+        "summary": "An assessment completed",
+        "tags": [
+          "Webhooks"
+        ],
+        "description": "Sent to your endpoint. Verify the `Briesa-Signature` header (`t=<unix>,v1=<hex>`, HMAC-SHA256 of `<t>.<raw body>` with your endpoint secret) and reject timestamps older than 5 minutes. Respond 2xx within 10 seconds; anything else is retried after 1 min, 5 min, 30 min, 2 h and 12 h (6 attempts in total). Redirects are not followed. Events never contain raw assessment inputs.",
+        "parameters": [
+          {
+            "name": "Briesa-Signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Briesa-Event",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Briesa-Delivery",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "created",
+                  "livemode",
+                  "data"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "assessment.completed"
+                  },
+                  "created": {
+                    "type": "integer",
+                    "description": "Unix seconds"
+                  },
+                  "livemode": {
+                    "type": "boolean"
+                  },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "request_id": {
+                        "type": "string"
+                      },
+                      "pack": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "scenario_type": {
+                        "type": "string"
+                      },
+                      "jurisdiction": {
+                        "type": "string"
+                      },
+                      "outcome": {
+                        "type": "string"
+                      },
+                      "escalation_recommended": {
+                        "type": "boolean"
+                      },
+                      "human_review_recommended": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Acknowledged"
+          }
+        }
+      }
+    },
+    "rules.updated": {
+      "post": {
+        "operationId": "rules.updated",
+        "summary": "Rules in a pack changed",
+        "tags": [
+          "Webhooks"
+        ],
+        "description": "Sent to your endpoint. Verify the `Briesa-Signature` header (`t=<unix>,v1=<hex>`, HMAC-SHA256 of `<t>.<raw body>` with your endpoint secret) and reject timestamps older than 5 minutes. Respond 2xx within 10 seconds; anything else is retried after 1 min, 5 min, 30 min, 2 h and 12 h (6 attempts in total). Redirects are not followed. Events never contain raw assessment inputs.",
+        "parameters": [
+          {
+            "name": "Briesa-Signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Briesa-Event",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Briesa-Delivery",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "created",
+                  "livemode",
+                  "data"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "rules.updated"
+                  },
+                  "created": {
+                    "type": "integer",
+                    "description": "Unix seconds"
+                  },
+                  "livemode": {
+                    "type": "boolean"
+                  },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "pack": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "rules": {
+                        "type": "object",
+                        "properties": {
+                          "added": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "changed": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "removed": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "added",
+                          "changed",
+                          "removed"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Acknowledged"
+          }
+        }
+      }
+    },
+    "pack.updated": {
+      "post": {
+        "operationId": "pack.updated",
+        "summary": "A pack was added, removed or its version/status changed",
+        "tags": [
+          "Webhooks"
+        ],
+        "description": "Sent to your endpoint. Verify the `Briesa-Signature` header (`t=<unix>,v1=<hex>`, HMAC-SHA256 of `<t>.<raw body>` with your endpoint secret) and reject timestamps older than 5 minutes. Respond 2xx within 10 seconds; anything else is retried after 1 min, 5 min, 30 min, 2 h and 12 h (6 attempts in total). Redirects are not followed. Events never contain raw assessment inputs.",
+        "parameters": [
+          {
+            "name": "Briesa-Signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Briesa-Event",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Briesa-Delivery",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "created",
+                  "livemode",
+                  "data"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "pack.updated"
+                  },
+                  "created": {
+                    "type": "integer",
+                    "description": "Unix seconds"
+                  },
+                  "livemode": {
+                    "type": "boolean"
+                  },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "pack": {
+                        "type": "string"
+                      },
+                      "change": {
+                        "enum": [
+                          "added",
+                          "removed",
+                          "updated"
+                        ]
+                      },
+                      "from": {
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      },
+                      "to": {
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Acknowledged"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API key: `bk_live_…` or `bk_test_…`. Test keys run the same logic, are not billed, and responses carry `test_mode: true`."
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "type",
+              "code",
+              "message",
+              "request_id"
+            ],
+            "properties": {
+              "type": {
+                "enum": [
+                  "invalid_request_error",
+                  "authentication_error",
+                  "permission_error",
+                  "not_found_error",
+                  "idempotency_error",
+                  "rate_limit_error",
+                  "api_error"
+                ]
+              },
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "request_id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Source": {
+        "type": "object",
+        "properties": {
+          "instrument": {
+            "type": "string"
+          },
+          "section": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "retrieved": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "instrument"
+        ]
+      },
+      "Pack": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "status",
+          "version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "industry": {
+            "type": "string"
+          },
+          "regulators": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "jurisdictions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "version": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "beta",
+              "verified"
+            ]
+          },
+          "reviewer": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "verified_on": {
+                "type": "string"
+              },
+              "source_version": {
+                "type": "string"
+              }
+            }
+          },
+          "licence_tier": {
+            "type": "string"
+          }
+        }
+      },
+      "PackDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Pack"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "scenario_types": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "description": {
+                      "type": "string"
+                    },
+                    "outcomes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Lowest to highest"
+                    },
+                    "input_schema": {
+                      "type": "object",
+                      "description": "JSON Schema for `inputs`"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "AssessResponse": {
+        "type": "object",
+        "required": [
+          "outcome",
+          "required_actions",
+          "missing_information",
+          "escalation_recommended",
+          "reasons",
+          "pack",
+          "disclaimer",
+          "human_review_recommended",
+          "request_id"
+        ],
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "description": "One of the pack's outcomes for this scenario type"
+          },
+          "required_actions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "rule_id": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "missing_information": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "rule_id": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "escalation_recommended": {
+            "type": "boolean"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rule_id": {
+                  "type": "string"
+                },
+                "rule_version": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "explanation": {
+                  "type": "string"
+                },
+                "outcome": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "source": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Source"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "effective_from": {
+                  "type": "string"
+                },
+                "effective_to": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "rules_pending_review": {
+            "type": "array",
+            "description": "Rules marked needs_review that matched. They are NOT applied to the outcome.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rule_id": {
+                  "type": "string"
+                },
+                "rule_version": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "ai_assisted_notes": {
+            "oneOf": [
+              {
+                "type": "object",
+                "description": "Optional, opt-in, labelled. Never changes the outcome and never decides anything.",
+                "properties": {
+                  "label": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "notes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "edge_cases": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "questions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ai_status": {
+            "enum": [
+              "not_requested",
+              "ok",
+              "unavailable",
+              "timeout",
+              "error",
+              "invalid_output"
+            ]
+          },
+          "pack": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "draft",
+                  "beta",
+                  "verified"
+                ]
+              }
+            }
+          },
+          "disclaimer": {
+            "type": "string"
+          },
+          "human_review_recommended": {
+            "type": "boolean"
+          },
+          "test_mode": {
+            "type": "boolean"
+          },
+          "request_id": {
+            "type": "string"
+          }
+        }
+      },
+      "PackRule": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$"
+              },
+              "version": {
+                "type": "string",
+                "pattern": "^\\d+\\.\\d+\\.\\d+$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "scenario_types": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$"
+                }
+              },
+              "jurisdictions": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "AU",
+                    "ACT",
+                    "NSW",
+                    "NT",
+                    "QLD",
+                    "SA",
+                    "TAS",
+                    "VIC",
+                    "WA"
+                  ]
+                }
+              },
+              "when": {
+                "$ref": "#/components/schemas/Rule___schema0"
+              },
+              "then": {
+                "type": "object",
+                "properties": {
+                  "outcome": {
+                    "type": "string"
+                  },
+                  "required_actions": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$"
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "description"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "missing_information": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "path": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+)*$"
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "path",
+                        "description"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "escalate": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "source": {
+                "type": "object",
+                "properties": {
+                  "instrument": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "section": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "retrieved": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  }
+                },
+                "required": [
+                  "instrument"
+                ],
+                "additionalProperties": false
+              },
+              "effective_from": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "effective_to": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "active",
+                  "needs_review",
+                  "retired"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "version",
+              "title",
+              "description",
+              "jurisdictions",
+              "when",
+              "then",
+              "effective_from",
+              "status"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "pack": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "PackObligation": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "applies_to": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "jurisdictions": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "AU",
+                    "ACT",
+                    "NSW",
+                    "NT",
+                    "QLD",
+                    "SA",
+                    "TAS",
+                    "VIC",
+                    "WA"
+                  ]
+                }
+              },
+              "deadline": {
+                "type": "string"
+              },
+              "source": {
+                "type": "object",
+                "properties": {
+                  "instrument": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "section": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "retrieved": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  }
+                },
+                "required": [
+                  "instrument"
+                ],
+                "additionalProperties": false
+              },
+              "effective_from": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "effective_to": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "active",
+                  "needs_review",
+                  "retired"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "description",
+              "applies_to",
+              "jurisdictions",
+              "effective_from",
+              "status"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "pack": {
+                "type": "string"
+              },
+              "pack_status": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "AuditRecord": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string"
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "pack": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              }
+            }
+          },
+          "rule_versions": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "inputs_hash": {
+            "type": "string",
+            "description": "SHA-256 of the canonical JSON inputs. Raw inputs are never stored."
+          },
+          "output": {},
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "test": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "UsageRow": {
+        "type": "object",
+        "properties": {
+          "packId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "test": {
+            "type": "boolean"
+          },
+          "count": {
+            "type": "integer"
+          }
+        }
+      },
+      "ApiKey": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "prefix": {
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "test",
+              "live"
+            ]
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rate_limit_per_minute": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revoked_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rotated_from": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ApiKeyCreated": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiKey"
+          },
+          {
+            "type": "object",
+            "required": [
+              "key"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "description": "Shown once"
+              }
+            }
+          }
+        ]
+      },
+      "Webhook": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "assessment.completed",
+                "rules.updated",
+                "pack.updated"
+              ]
+            }
+          },
+          "packs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "WebhookCreated": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Webhook"
+          },
+          {
+            "type": "object",
+            "required": [
+              "secret"
+            ],
+            "properties": {
+              "secret": {
+                "type": "string",
+                "description": "Signing secret, shown once"
+              }
+            }
+          }
+        ]
+      },
+      "WebhookDelivery": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "event": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "succeeded",
+              "failed"
+            ]
+          },
+          "attempts": {
+            "type": "integer"
+          },
+          "last_status_code": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "last_error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "next_attempt_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "delivered_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Rule___schema0": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "all": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Rule___schema0"
+                }
+              }
+            },
+            "required": [
+              "all"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "any": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Rule___schema0"
+                }
+              }
+            },
+            "required": [
+              "any"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "not": {
+                "$ref": "#/components/schemas/Rule___schema0"
+              }
+            },
+            "required": [
+              "not"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+)*$"
+              },
+              "op": {
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "neq",
+                  "in",
+                  "not_in",
+                  "gt",
+                  "gte",
+                  "lt",
+                  "lte",
+                  "exists",
+                  "missing",
+                  "contains"
+                ]
+              },
+              "value": {}
+            },
+            "required": [
+              "path",
+              "op"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  }
+}

@@ -184,6 +184,15 @@ describe("metering and sandbox", () => {
     expect(u).toContainEqual({ packId: "p1", endpoint: "echo", test: true, count: 1 });
   });
 
+  it("does not meter idempotent replays", async () => {
+    const { app, mint, tenantA, auth } = await setup();
+    const k = await mint(tenantA.id, ["assess", "read", "pack:*"]);
+    const h = auth(k, { "idempotency-key": "once" });
+    for (let i = 0; i < 3; i++) await app.inject({ method: "POST", url: "/v1/_echo", headers: h, payload: { pack: "p1" } });
+    const u = (await app.inject({ url: "/v1/usage", headers: auth(k) })).json().usage;
+    expect(u).toEqual([{ packId: "p1", endpoint: "echo", test: false, count: 1 }]);
+  });
+
   it("does not meter failed calls", async () => {
     const { app, mint, tenantA, auth } = await setup();
     const k = await mint(tenantA.id, ["assess", "read", "pack:real-estate-aml"]);

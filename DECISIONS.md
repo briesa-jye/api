@@ -25,6 +25,19 @@ Defaults chosen by the build, as agreed with Jye. Change any of these before pro
 - Unlicensed packs return 404, not 403, so pack ids aren't enumerable.
 - Packs load once at startup; `rules.updated` / `pack.updated` webhooks and hot reload come with webhooks.
 
+## Phase 4 decisions
+- **Webhook delivery uses a database-backed outbox with a polling worker, not BullMQ.** Deliveries are rows with `nextAttemptAt`; a worker claims due rows with a lease. It survives restarts, needs no Redis, and is simpler to reason about at this scale. This deviates from the plan; BullMQ can replace the poller later without changing the API. Redis is still needed for a multi-instance rate limiter.
+- Retry schedule: 1 min, 5 min, 30 min, 2 h, 12 h (6 attempts), 10 s timeout, redirects not followed, destination re-resolved at send time to block private addresses (SSRF).
+- Webhook signing secrets are stored in plaintext (they must be recoverable to sign). Encrypt at rest before production (noted in the Prisma schema).
+- Webhook events carry outcome metadata only, never raw inputs. Pack events (`pack.updated`, `rules.updated`) go only to tenants that still hold a live key with access to that pack.
+- Packs reload on `SIGHUP` (or `app.reloadPacks()`); an invalid reload keeps the old packs live and emits nothing.
+- **AI notes are opt-in per request (`options.ai_notes`).** Only booleans, numbers and enum values described by the pack's input schema are sent to the model; free text is never sent. Output must match a strict JSON schema, and items that read as a regulatory decision or direction to lodge/notify are dropped. On any failure the response is the deterministic result with `ai_assisted_notes: null`.
+- Claude Haiku is wired as a named model constant but **no endpoint uses it yet**; "interpret messy inputs" (free-text to structured fields) is not built.
+- The AI client and prompt were tested with fake model clients only. Nothing was sent to a real model in this phase.
+- The server **refuses to start with `NODE_ENV=production`** because the only store is in memory. In development it prints throwaway keys at startup.
+- The OpenAPI document is built from the same Zod schemas the routes validate with; tests assert it is valid 3.1, covers every route and scope, and that `docs/` is regenerated (`pnpm docs:generate`).
+- Idempotent replays are not metered.
+
 ## Phase 3 decisions
 - Both real packs are `draft` with no reviewer, not `beta`: they were compiled from regulator guidance pages by the build, with no human expert review. Only `verified` is production-ready.
 - Pack rules cite regulator guidance pages (AUSTRAC, Safe Work Australia) with retrieval dates, not the legislation text, which could not be read in this session. See `RULES_TO_VERIFY.md`.
@@ -36,4 +49,4 @@ Defaults chosen by the build, as agreed with Jye. Change any of these before pro
 
 ## Phase 1 limitations
 - `MemoryStore` backs the running server; `prisma/schema.prisma` is written and validates but there is no `PrismaStore` yet and no migration has been run (needs a database).
-- There is no way yet to create the first tenant and key outside tests (needs the Prisma store plus a provisioning script).
+- Tenants and keys can only be created by the dev bootstrap in `apps/api/src/main.ts` or in tests (needs the Prisma store plus a provisioning script).

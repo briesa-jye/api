@@ -14,7 +14,7 @@ export const DISCLAIMER =
   "Decision-support only. This is an AI-assisted assessment of the information supplied, not legal advice. " +
   "A qualified person must review it and remains responsible for compliance decisions.";
 
-const body = z.strictObject({
+export const assessBody = z.strictObject({
   pack: z.string().min(1),
   scenario_type: z.string().min(1),
   jurisdiction: z.enum(JURISDICTIONS),
@@ -29,7 +29,7 @@ const stable = (v: unknown): string =>
 
 export const assessRoutes: FastifyPluginAsync<{ packs: PackRegistry; store: Store; webhooks: WebhookService; ai?: AiClient }> = async (app, { packs, store, webhooks, ai }) => {
   app.post("/v1/assess", { config: { scope: "assess", billable: "assess" } }, async (req) => {
-    const parsed = body.safeParse(req.body);
+    const parsed = assessBody.safeParse(req.body);
     if (!parsed.success) {
       throw new ApiError("invalid_request_error", "invalid_body", parsed.error.issues.map((i) => `${i.path.join(".") || "(body)"}: ${i.message}`).join("; "));
     }

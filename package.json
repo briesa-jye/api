@@ -8,16 +8,18 @@
     "typecheck": "tsc --noEmit",
     "dev": "pnpm --filter @briesa/api dev",
     "pack:validate": "node cli/pack-validate.ts",
-    "pack:new": "node cli/pack-new.ts"
+    "pack:new": "node cli/pack-new.ts",
+    "docs:generate": "node scripts/generate-docs.ts"
   },
   "devDependencies": {
-    "@briesa/db": "workspace:*",
+    "@briesa/ai": "workspace:*",
     "@briesa/api": "workspace:*",
-    "@types/node": "^24",
-    "typescript": "^5.9",
-    "vitest": "^3",
+    "@briesa/db": "workspace:*",
     "@briesa/engine": "workspace:*",
     "@briesa/packs": "workspace:*",
-    "@briesa/ai": "workspace:*"
+    "@scalar/openapi-parser": "^0.29.26",
+    "@types/node": "^24",
+    "typescript": "^5.9",
+    "vitest": "^3"
   }
 }

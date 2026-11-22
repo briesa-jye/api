@@ -4,7 +4,7 @@ import type { ApiKeyRecord, Store } from "@briesa/db";
 import { ApiError } from "../errors.ts";
 import { generateKey } from "../keys.ts";
 
-const createBody = z.strictObject({
+export const createKeyBody = z.strictObject({
   name: z.string().min(1).max(100),
   mode: z.enum(["test", "live"]),
   scopes: z.array(z.string().regex(/^(\*|assess|read|audit:read|keys:manage|webhooks|pack:[a-z0-9-]+|pack:\*)$/)).min(1),
@@ -33,7 +33,7 @@ export const keyRoutes: FastifyPluginAsync<{ store: Store }> = async (app, { sto
   }));
 
   app.post("/v1/keys", { config: { scope: "keys:manage", idempotent: false } }, async (req, reply) => {
-    const body = createBody.safeParse(req.body);
+    const body = createKeyBody.safeParse(req.body);
     if (!body.success) throw new ApiError("invalid_request_error", "invalid_body", body.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "));
     assertSubset(req.auth!.scopes, body.data.scopes);
     const { key, prefix, hash } = generateKey(body.data.mode);

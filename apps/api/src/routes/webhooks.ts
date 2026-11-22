@@ -7,7 +7,7 @@ import { hasPackAccess } from "../keys.ts";
 import { newSecret } from "../webhooks/sign.ts";
 import { checkUrlShape, UnsafeUrlError } from "../webhooks/ssrf.ts";
 
-const body = z.strictObject({
+export const createWebhookBody = z.strictObject({
   url: z.string().max(2000),
   events: z.array(z.enum(WEBHOOK_EVENTS)).min(1),
   packs: z.array(z.string().min(1)).min(1).max(50).optional(),
@@ -17,7 +17,7 @@ const view = (e: WebhookEndpoint) => ({ id: e.id, url: e.url, events: e.events, 
 
 export const webhookRoutes: FastifyPluginAsync<{ store: Store; packs: PackRegistry }> = async (app, { store, packs }) => {
   app.post("/v1/webhooks", { config: { scope: "webhooks", idempotent: false } }, async (req, reply) => {
-    const parsed = body.safeParse(req.body);
+    const parsed = createWebhookBody.safeParse(req.body);
     if (!parsed.success) throw new ApiError("invalid_request_error", "invalid_body", parsed.error.issues.map((i) => `${i.path.join(".") || "(body)"}: ${i.message}`).join("; "));
     const b = parsed.data;
     try { checkUrlShape(b.url); } catch (e) {

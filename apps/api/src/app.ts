@@ -12,6 +12,7 @@ import { webhookRoutes } from "./routes/webhooks.ts";
 import { assessRoutes } from "./routes/assess.ts";
 import { packRoutes } from "./routes/packs.ts";
 import { keyRoutes } from "./routes/keys.ts";
+import { buildOpenApi, toOpenApiPath } from "./openapi.ts";
 import { metaRoutes } from "./routes/meta.ts";
 
 export interface RouteConfig {
@@ -49,6 +50,8 @@ declare module "fastify" {
     webhooks: WebhookService;
     /** Reload packs from packsDir; emits pack.updated / rules.updated. Keeps the old packs if the new ones are invalid. */
     reloadPacks(): Promise<{ changed: number }>;
+    /** Every registered route, for the docs-completeness test. */
+    routeTable: { method: string; path: string; scope: string | null }[];
   }
 }
 
@@ -65,6 +68,17 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
       ? { level: "info", redact: ["req.headers.authorization", "req.headers.cookie"] }
       : false,
   });
+
+  const routeTable: { method: string; path: string; scope: string | null }[] = [];
+  app.decorate("routeTable", routeTable);
+  app.addHook("onRoute", (r) => {
+    for (const m of [r.method].flat()) {
+      if (m === "HEAD" || m === "OPTIONS") continue;
+      routeTable.push({ method: m.toLowerCase(), path: toOpenApiPath(r.url), scope: (r.config as { scope?: string } | undefined)?.scope ?? null });
+    }
+  });
+  const openapi = buildOpenApi();
+  app.get("/v1/openapi.json", async () => openapi);
 
   app.decorateRequest("auth", undefined);
   app.decorateRequest("packId", undefined);
@@ -139,7 +153,8 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
   // Metering: one billable event per successful call to a billable route. Test keys are flagged, not billed.
   app.addHook("onResponse", async (req, reply) => {
     const billable = req.routeOptions.config?.billable;
-    if (!billable || !req.auth || reply.statusCode >= 400) return;
+    // An idempotent replay returns a stored response without running the handler: it is not a new billable event.
+    if (!billable || !req.auth || reply.statusCode >= 400 || reply.getHeader("idempotent-replayed")) return;
     await store.recordUsage({
       tenantId: req.auth.tenantId, keyId: req.auth.id, packId: req.packId ?? null,
       endpoint: billable, test: req.auth.mode === "test", month: monthOf(),
