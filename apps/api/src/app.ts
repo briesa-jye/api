@@ -6,6 +6,7 @@ import { hasScope, hashKey, hashesEqual, parseKey } from "./keys.ts";
 import { MemoryRateLimiter, type RateLimiter } from "./ratelimit.ts";
 import { monthOf } from "./month.ts";
 import { diffRegistries, PackRegistry } from "@briesa/packs";
+import type { AiClient } from "@briesa/ai";
 import { WebhookService } from "./webhooks/service.ts";
 import { webhookRoutes } from "./routes/webhooks.ts";
 import { assessRoutes } from "./routes/assess.ts";
@@ -38,6 +39,8 @@ export interface AppOptions {
   /** Directory packs are (re)loaded from by app.reloadPacks(). */
   packsDir?: string;
   webhooks?: WebhookService;
+  /** Optional model client for AI-assisted notes. Without it, ai_notes requests return ai_status "unavailable". */
+  ai?: AiClient;
   logger?: boolean;
 }
 
@@ -183,6 +186,6 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
   await app.register(keyRoutes, { store });
   await app.register(webhookRoutes, { store, packs });
   await app.register(packRoutes, { packs });
-  await app.register(assessRoutes, { packs, store, webhooks });
+  await app.register(assessRoutes, { packs, store, webhooks, ai: opts.ai });
   return app;
 }

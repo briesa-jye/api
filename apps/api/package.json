@@ -11,6 +11,7 @@
     "fastify": "^5",
     "zod": "^4",
     "@briesa/engine": "workspace:*",
-    "@briesa/packs": "workspace:*"
+    "@briesa/packs": "workspace:*",
+    "@briesa/ai": "workspace:*"
   }
 }

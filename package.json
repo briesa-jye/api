@@ -17,6 +17,7 @@
     "typescript": "^5.9",
     "vitest": "^3",
     "@briesa/engine": "workspace:*",
-    "@briesa/packs": "workspace:*"
+    "@briesa/packs": "workspace:*",
+    "@briesa/ai": "workspace:*"
   }
 }

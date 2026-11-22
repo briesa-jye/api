@@ -4,6 +4,7 @@ import { z } from "zod";
 import { JURISDICTIONS } from "@briesa/engine";
 import { runPack, validateInputs, type PackRegistry } from "@briesa/packs";
 import type { Store } from "@briesa/db";
+import { factsForModel, generateAiNotes, type AiClient } from "@briesa/ai";
 import { ApiError } from "../errors.ts";
 import { hasPackAccess } from "../keys.ts";
 import { todayAU } from "../month.ts";
@@ -18,6 +19,7 @@ const body = z.strictObject({
   scenario_type: z.string().min(1),
   jurisdiction: z.enum(JURISDICTIONS),
   inputs: z.record(z.string(), z.unknown()),
+  options: z.strictObject({ ai_notes: z.boolean().optional() }).optional(),
 });
 
 const stable = (v: unknown): string =>
@@ -25,7 +27,7 @@ const stable = (v: unknown): string =>
   : v && typeof v === "object" ? `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${stable((v as Record<string, unknown>)[k])}`).join(",")}}`
   : JSON.stringify(v) ?? "null";
 
-export const assessRoutes: FastifyPluginAsync<{ packs: PackRegistry; store: Store; webhooks: WebhookService }> = async (app, { packs, store, webhooks }) => {
+export const assessRoutes: FastifyPluginAsync<{ packs: PackRegistry; store: Store; webhooks: WebhookService; ai?: AiClient }> = async (app, { packs, store, webhooks, ai }) => {
   app.post("/v1/assess", { config: { scope: "assess", billable: "assess" } }, async (req) => {
     const parsed = body.safeParse(req.body);
     if (!parsed.success) {
@@ -50,6 +52,25 @@ export const assessRoutes: FastifyPluginAsync<{ packs: PackRegistry; store: Stor
     req.packId = b.pack;
 
     const r = runPack(pack, { scenarioType: b.scenario_type, jurisdiction: b.jurisdiction, inputs: b.inputs, asOf: todayAU() });
+    // Optional AI-assisted notes. Opt-in, never changes the deterministic result, falls back to null on any failure.
+    let aiNotes: { label: string; model: string; notes: string[]; edge_cases: string[]; questions: string[] } | null = null;
+    let aiStatus: "not_requested" | "ok" | "unavailable" | "timeout" | "error" | "invalid_output" = "not_requested";
+    let aiModel: string | null = null;
+    if (b.options?.ai_notes) {
+      const res = await generateAiNotes(ai, {
+        packName: m.name, scenarioType: b.scenario_type, jurisdiction: b.jurisdiction, outcome: r.outcome,
+        outcomes: m.scenario_types[b.scenario_type]!.outcome.order,
+        reasons: r.reasons.map((x) => ({ rule_id: x.rule_id, title: x.title, explanation: x.explanation })),
+        requiredActions: r.required_actions.map((a) => ({ id: a.id, description: a.description })),
+        missing: r.missing_information.map((x) => ({ path: x.path, description: x.description })),
+        facts: factsForModel(b.inputs, pack.inputSchemas[b.scenario_type] as Record<string, unknown>),
+      });
+      if (res.ok) {
+        aiStatus = "ok"; aiModel = res.model;
+        aiNotes = { label: "AI-assisted notes. Not a regulatory decision; a qualified person must review.", model: res.model, ...res.notes };
+      } else aiStatus = res.reason;
+    }
+
     const response = {
       outcome: r.outcome,
       required_actions: r.required_actions,
@@ -57,7 +78,8 @@ export const assessRoutes: FastifyPluginAsync<{ packs: PackRegistry; store: Stor
       escalation_recommended: r.escalation_recommended,
       reasons: r.reasons,
       rules_pending_review: r.rules_pending_review,
-      ai_assisted_notes: null as string | null, // AI layer arrives in a later phase; deterministic result only
+      ai_assisted_notes: aiNotes,
+      ai_status: aiStatus,
       pack: { id: m.id, version: m.version, status: m.status },
       disclaimer: DISCLAIMER,
       // Anything short of a verified pack, any escalation, or any unapplied needs_review match calls for a human.
@@ -70,7 +92,7 @@ export const assessRoutes: FastifyPluginAsync<{ packs: PackRegistry; store: Stor
       packId: m.id, packVersion: m.version,
       ruleVersions: Object.fromEntries(r.reasons.map((x) => [x.rule_id, x.rule_version])),
       inputsHash: createHash("sha256").update(stable(b.inputs)).digest("hex"), // raw inputs are never stored
-      output: response, model: null, test: req.auth!.mode === "test",
+      output: response, model: aiModel, test: req.auth!.mode === "test",
     });
     // Event carries outcome metadata only: never raw inputs.
     await webhooks.emit({
