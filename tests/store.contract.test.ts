@@ -97,6 +97,27 @@ for (const f of storeFactories) {
       expect((await store.listAudit(B, { limit: 50 })).some((r) => r.requestId === "req_l0")).toBe(false);
     });
 
+    it("audit stats: groups assessments by day, pack, mode, outcome and escalation, never returns inputs, isolates tenants", async () => {
+      const mk = (id: string, tenant: string, o: { outcome?: string; escalation_recommended?: boolean } | null, over: object = {}) =>
+        store.appendAudit({ ...audit(tenant, id), output: o, packId: "p1", test: true, endpoint: "assess", ...over });
+      await mk("req_s1", A, { outcome: "notifiable", escalation_recommended: true });
+      await mk("req_s2", A, { outcome: "notifiable", escalation_recommended: true });
+      await mk("req_s3", A, { outcome: "not_notifiable" });
+      await mk("req_s4", A, null);
+      await mk("req_s5", A, { outcome: "notifiable" }, { test: false });
+      await mk("req_s6", A, { outcome: "notifiable" }, { endpoint: "other" });
+      await mk("req_s7", B, { outcome: "notifiable" });
+      const rows = await store.auditStats(A, new Date(Date.now() - 86_400_000));
+      const find = (outcome: string | null, test: boolean, escalated: boolean) => rows.find((r) => r.outcome === outcome && r.test === test && r.escalated === escalated);
+      expect(find("notifiable", true, true)?.count).toBe(2);
+      expect(find("not_notifiable", true, false)?.count).toBe(1);
+      expect(find(null, true, false)?.count).toBe(1);
+      expect(find("notifiable", false, false)?.count).toBe(1);
+      expect(rows.reduce((n, r) => n + r.count, 0)).toBe(5); // the "other" endpoint and tenant B are excluded
+      expect(rows.every((r) => /^\d{4}-\d{2}-\d{2}$/.test(r.day))).toBe(true);
+      expect(await store.auditStats(A, new Date(Date.now() + 86_400_000))).toEqual([]);
+    });
+
     it("idempotency: exactly one concurrent claim wins, others see it pending, then the stored response", async () => {
       const claims = await Promise.all(Array.from({ length: 8 }, () => store.claimIdempotency(A, "k1", "h")));
       expect(claims.filter((c) => c.claimed)).toHaveLength(1);

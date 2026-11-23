@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { FINISHED_DELIVERY_TTL_MS, IDEMPOTENCY_PENDING_MS, IDEMPOTENCY_TTL_MS } from "./types.ts";
 import type {
-  ApiKeyRecord, AuditInput, AuditListQuery, AuditRecord, IdempotencyClaim, IdempotencyRecord, Store, Tenant, UsageEvent, UsageSummaryRow,
+  ApiKeyRecord, AuditInput, AuditListQuery, AuditRecord, AuditStatRow, IdempotencyClaim, IdempotencyRecord, Store, Tenant, UsageEvent, UsageSummaryRow,
   WebhookDelivery, WebhookEndpoint, WebhookEvent, PurgeResult, TenantBillingPatch, TenantMember,
 } from "./types.ts";
 
@@ -124,7 +124,7 @@ export class MemoryStore implements Store {
   }
 
   async appendAudit(r: AuditInput) {
-    this.audits.push({ ...r, reference: r.reference ?? null, createdAt: new Date() });
+    this.audits.push({ ...r, reference: r.reference ?? null, createdAt: r.createdAt ?? new Date() });
   }
   async listAudit(tenantId: string, q: AuditListQuery) {
     const t = (a: AuditRecord) => a.createdAt.getTime();
@@ -138,6 +138,21 @@ export class MemoryStore implements Store {
       .sort((x, y) => t(y.a) - t(x.a) || (y.a.requestId < x.a.requestId ? -1 : y.a.requestId > x.a.requestId ? 1 : 0))
       .slice(0, q.limit)
       .map(({ a }) => ({ ...a }));
+  }
+  async auditStats(tenantId: string, since: Date): Promise<AuditStatRow[]> {
+    const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney" });
+    const buckets = new Map<string, AuditStatRow>();
+    for (const a of this.audits) {
+      if (a.tenantId !== tenantId || a.endpoint !== "assess" || a.createdAt < since) continue;
+      const o = (a.output ?? {}) as { outcome?: unknown; escalation_recommended?: unknown };
+      const outcome = typeof o.outcome === "string" ? o.outcome : null;
+      const escalated = o.escalation_recommended === true;
+      const row = { day: day.format(a.createdAt), packId: a.packId, test: a.test, outcome, escalated, count: 1 };
+      const key = JSON.stringify([row.day, row.packId, row.test, row.outcome, row.escalated]);
+      const cur = buckets.get(key);
+      if (cur) cur.count++; else buckets.set(key, row);
+    }
+    return [...buckets.values()];
   }
   async getAudit(tenantId: string, requestId: string) {
     return this.audits.find((a) => a.tenantId === tenantId && a.requestId === requestId) ?? null;

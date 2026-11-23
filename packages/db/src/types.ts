@@ -74,7 +74,11 @@ export interface AuditRecord {
   createdAt: Date;
 }
 
-export type AuditInput = Omit<AuditRecord, "createdAt" | "reference"> & { reference?: string | null };
+export type AuditInput = Omit<AuditRecord, "createdAt" | "reference"> & {
+  reference?: string | null;
+  /** Only for imports and the local demo seed. The API never sets it, so real records are always stamped by the database. */
+  createdAt?: Date;
+};
 
 export interface AuditListQuery {
   limit: number;
@@ -101,6 +105,16 @@ export type IdempotencyClaim = { claimed: true } | { claimed: false; record: Ide
 export const FINISHED_DELIVERY_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 export interface PurgeResult { audit: number; idempotency: number; deliveries: number }
+
+/** One bucket of the assess audit trail, for dashboards. `day` is the Australia/Sydney calendar day. */
+export interface AuditStatRow {
+  day: string;
+  packId: string | null;
+  test: boolean;
+  outcome: string | null;
+  escalated: boolean;
+  count: number;
+}
 
 export interface UsageSummaryRow {
   packId: string | null;
@@ -181,6 +195,8 @@ export interface Store {
   getAudit(tenantId: string, requestId: string): Promise<AuditRecord | null>;
   /** Newest first. Fetch limit + 1 to know whether another page exists. */
   listAudit(tenantId: string, query: AuditListQuery): Promise<AuditRecord[]>;
+  /** Assessments since `since`, grouped by day, pack, mode, outcome and escalation. Never returns inputs. */
+  auditStats(tenantId: string, since: Date): Promise<AuditStatRow[]>;
 
   /**
    * Atomically claims (tenantId, key) for a request. Exactly one concurrent caller gets `claimed: true`; others get the

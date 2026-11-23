@@ -2,7 +2,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { FINISHED_DELIVERY_TTL_MS, IDEMPOTENCY_PENDING_MS, IDEMPOTENCY_TTL_MS } from "./types.ts";
 import type {
-  ApiKeyRecord, AuditInput, AuditListQuery, AuditRecord, IdempotencyClaim, IdempotencyRecord, KeyMode, PurgeResult, Store, Tenant, UsageEvent, UsageSummaryRow,
+  ApiKeyRecord, AuditInput, AuditListQuery, AuditRecord, AuditStatRow, IdempotencyClaim, IdempotencyRecord, KeyMode, PurgeResult, Store, Tenant, UsageEvent, UsageSummaryRow,
   WebhookDelivery, WebhookEndpoint, WebhookEvent, TenantBillingPatch, TenantMember,
 } from "./types.ts";
 
@@ -135,6 +135,17 @@ export class PrismaStore implements Store {
       take: q.limit,
     });
     return rows.map((a) => ({ ...a, ruleVersions: a.ruleVersions as Record<string, string> | null, output: a.output }));
+  }
+  async auditStats(tenantId: string, since: Date): Promise<AuditStatRow[]> {
+    const rows = await this.db.$queryRaw<{ day: string; packId: string | null; test: boolean; outcome: string | null; escalated: boolean; count: number }[]>(Prisma.sql`
+      SELECT to_char("createdAt" AT TIME ZONE 'Australia/Sydney', 'YYYY-MM-DD') AS day,
+             "packId", "test", "output"->>'outcome' AS outcome,
+             COALESCE(("output"->>'escalation_recommended')::boolean, false) AS escalated,
+             COUNT(*)::int AS count
+      FROM "AuditRecord"
+      WHERE "tenantId" = ${tenantId} AND "endpoint" = 'assess' AND "createdAt" >= ${since}
+      GROUP BY 1, 2, 3, 4, 5`);
+    return rows;
   }
   async getAudit(tenantId: string, requestId: string): Promise<AuditRecord | null> {
     const a = await this.db.auditRecord.findUnique({ where: { tenantId_requestId: { tenantId, requestId } } });
