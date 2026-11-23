@@ -38,6 +38,20 @@ Environment:
 | `PORT` | provided by the host |
 | `ANTHROPIC_API_KEY` | optional; enables AI-assisted notes |
 
+### Fly.io (Sydney)
+
+`fly.toml` is in the repo root. One machine only (the rate limiter is per-instance memory) and it must stay running (webhook worker, retention job).
+
+```bash
+brew install flyctl && fly auth login
+fly launch --copy-config --no-deploy        # pick your own unique app name
+fly secrets set DATABASE_URL='postgresql://...'   # optional: ANTHROPIC_API_KEY
+fly scale count 1 --region syd
+fly deploy
+```
+
+The app is then at `https://<app>.fly.dev`; check `https://<app>.fly.dev/health`. Add a custom hostname with `fly certs add gateway.briesa.com` and the DNS records it prints.
+
 Give it a hostname such as `gateway.briesa.com` and put that in the website's `NEXT_PUBLIC_API_BASE_URL`. Health check path: `/health`. Run one instance until the rate limiter moves to Redis (it is per-instance memory).
 
 ## 3. Website on Vercel
