@@ -73,6 +73,30 @@ for (const f of storeFactories) {
       expect(await store.getAudit(B, "req_1")).not.toBeNull();
     });
 
+    it("audit list: newest first, keyset pages without gaps or repeats, filters, tenant isolation, reference round trip", async () => {
+      for (let i = 0; i < 5; i++) await store.appendAudit({ ...audit(A, `req_l${i}`), reference: i % 2 ? "odd" : null, packId: i < 3 ? "p1" : "p2" });
+      await store.appendAudit(audit(B, "req_other"));
+      const all = await store.listAudit(A, { limit: 50 });
+      expect(all.filter((r) => r.requestId.startsWith("req_l")).map((r) => r.requestId).sort()).toEqual(["req_l0", "req_l1", "req_l2", "req_l3", "req_l4"]);
+      const times = all.map((r) => r.createdAt.getTime());
+      expect([...times].sort((a, b) => b - a)).toEqual(times);
+      const paged: string[] = [];
+      let after: { createdAt: Date; requestId: string } | undefined;
+      for (;;) {
+        const page = await store.listAudit(A, { limit: 2, after });
+        paged.push(...page.map((r) => r.requestId));
+        if (page.length < 2) break;
+        const last = page[page.length - 1]!; after = { createdAt: last.createdAt, requestId: last.requestId };
+      }
+      expect(paged).toEqual(all.map((r) => r.requestId));
+      expect((await store.listAudit(A, { limit: 50, reference: "odd" })).map((r) => r.requestId).sort()).toEqual(["req_l1", "req_l3"]);
+      expect((await store.listAudit(A, { limit: 50, packId: "p2" })).map((r) => r.requestId).sort()).toEqual(["req_l3", "req_l4"]);
+      expect((await store.getAudit(A, "req_l1"))?.reference).toBe("odd");
+      expect((await store.getAudit(A, "req_l0"))?.reference).toBeNull();
+      expect((await store.listAudit(B, { limit: 50 })).map((r) => r.requestId)).toContain("req_other");
+      expect((await store.listAudit(B, { limit: 50 })).some((r) => r.requestId === "req_l0")).toBe(false);
+    });
+
     it("idempotency: exactly one concurrent claim wins, others see it pending, then the stored response", async () => {
       const claims = await Promise.all(Array.from({ length: 8 }, () => store.claimIdempotency(A, "k1", "h")));
       expect(claims.filter((c) => c.claimed)).toHaveLength(1);

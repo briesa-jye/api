@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { FINISHED_DELIVERY_TTL_MS, IDEMPOTENCY_PENDING_MS, IDEMPOTENCY_TTL_MS } from "./types.ts";
 import type {
-  ApiKeyRecord, AuditRecord, IdempotencyClaim, IdempotencyRecord, Store, Tenant, UsageEvent, UsageSummaryRow,
+  ApiKeyRecord, AuditInput, AuditListQuery, AuditRecord, IdempotencyClaim, IdempotencyRecord, Store, Tenant, UsageEvent, UsageSummaryRow,
   WebhookDelivery, WebhookEndpoint, WebhookEvent, PurgeResult, TenantBillingPatch, TenantMember,
 } from "./types.ts";
 
@@ -123,8 +123,21 @@ export class MemoryStore implements Store {
     return [...rows.values()];
   }
 
-  async appendAudit(r: Omit<AuditRecord, "createdAt">) {
-    this.audits.push({ ...r, createdAt: new Date() });
+  async appendAudit(r: AuditInput) {
+    this.audits.push({ ...r, reference: r.reference ?? null, createdAt: new Date() });
+  }
+  async listAudit(tenantId: string, q: AuditListQuery) {
+    const t = (a: AuditRecord) => a.createdAt.getTime();
+    return this.audits
+      .map((a, i) => ({ a, i }))
+      .filter(({ a }) => a.tenantId === tenantId)
+      .filter(({ a }) => q.packId === undefined || a.packId === q.packId)
+      .filter(({ a }) => q.reference === undefined || a.reference === q.reference)
+      .filter(({ a }) => q.test === undefined || a.test === q.test)
+      .filter(({ a }) => !q.after || t(a) < q.after.createdAt.getTime() || (t(a) === q.after.createdAt.getTime() && a.requestId < q.after.requestId))
+      .sort((x, y) => t(y.a) - t(x.a) || (y.a.requestId < x.a.requestId ? -1 : y.a.requestId > x.a.requestId ? 1 : 0))
+      .slice(0, q.limit)
+      .map(({ a }) => ({ ...a }));
   }
   async getAudit(tenantId: string, requestId: string) {
     return this.audits.find((a) => a.tenantId === tenantId && a.requestId === requestId) ?? null;

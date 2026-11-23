@@ -130,3 +130,67 @@ describe("platform code is industry-agnostic", () => {
     expect(hits).toEqual([]);
   });
 });
+
+describe("as_of, reference and the audit list", () => {
+  it("evaluates the rules as they stood on as_of and echoes it", async () => {
+    const { assess } = await boot();
+    const now = (await assess(valid)).json();
+    expect(now.as_of).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    const before = (await assess({ ...valid, as_of: "2019-12-31" })).json(); // every widget rule starts 2020-01-01
+    expect(before.as_of).toBe("2019-12-31");
+    expect(before.reasons).toEqual([]);
+    expect(before.outcome).not.toBe(now.outcome);
+    const on = (await assess({ ...valid, as_of: "2020-01-01" })).json();
+    expect(on.outcome).toBe(now.outcome);
+  });
+
+  it("rejects malformed and impossible as_of dates", async () => {
+    const { assess } = await boot();
+    for (const as_of of ["2026-13-01", "2026-02-30", "1 June 2026", "2026-6-1"]) {
+      const r = await assess({ ...valid, as_of });
+      expect(r.statusCode, as_of).toBe(400);
+    }
+  });
+
+  it("stores the caller's reference in the audit record and finds it again", async () => {
+    const { assess, app, h } = await boot();
+    const a = (await assess({ ...valid, reference: "matter-42" })).json();
+    await assess({ ...valid, reference: "matter-43" });
+    expect(a.reference).toBe("matter-42");
+    expect((await app.inject({ url: `/v1/audit/${a.request_id}`, headers: h })).json().reference).toBe("matter-42");
+    const found = (await app.inject({ url: "/v1/audit?reference=matter-42", headers: h })).json();
+    expect(found.data.map((x: { request_id: string }) => x.request_id)).toEqual([a.request_id]);
+    expect((await assess({ ...valid, reference: "" })).statusCode).toBe(400);
+    expect((await assess({ ...valid, reference: "x".repeat(201) })).statusCode).toBe(400);
+  });
+
+  it("pages through audit records newest first with a cursor and never repeats or skips one", async () => {
+    const { assess, app, h } = await boot();
+    const ids: string[] = [];
+    for (let i = 0; i < 7; i++) ids.push((await assess(valid)).json().request_id);
+    const seen: string[] = [];
+    let cursor: string | null = null;
+    for (let pages = 0; pages < 10; pages++) {
+      const r: { data: { request_id: string }[]; has_more: boolean; next_cursor: string | null } =
+        (await app.inject({ url: `/v1/audit?limit=3${cursor ? `&starting_after=${cursor}` : ""}`, headers: h })).json();
+      seen.push(...r.data.map((x) => x.request_id));
+      expect(r.has_more).toBe(r.next_cursor !== null);
+      if (!r.has_more) break;
+      cursor = r.next_cursor;
+    }
+    expect([...seen].sort()).toEqual([...ids].sort());
+    expect(new Set(seen).size).toBe(7);
+  });
+
+  it("validates list parameters and isolates tenants", async () => {
+    const { assess, app, h, store } = await boot();
+    await assess(valid);
+    for (const q of ["limit=0", "limit=101", "limit=x", "starting_after=!!!", "test=maybe"]) {
+      expect((await app.inject({ url: `/v1/audit?${q}`, headers: h })).statusCode, q).toBe(400);
+    }
+    const other = await store.createTenant({ name: "Other", billingExempt: true });
+    const g = generateKey("live");
+    await store.createApiKey({ tenantId: other.id, name: "k", prefix: g.prefix, hash: g.hash, mode: "live", scopes: ["audit:read"], rateLimitPerMinute: 100, rotatedFromId: null });
+    expect((await app.inject({ url: "/v1/audit", headers: { authorization: `Bearer ${g.key}` } })).json().data).toEqual([]);
+  });
+});

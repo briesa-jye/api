@@ -77,9 +77,12 @@ model AuditRecord {
   output       Json?
   model        String?
   test         Boolean
+  reference    String?
   createdAt    DateTime @default(now())
 
   @@unique([tenantId, requestId])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, reference])
 }
 
 model IdempotencyRecord {

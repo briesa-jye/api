@@ -27,6 +27,8 @@ export interface AssessmentCore {
   escalation_recommended: boolean;
   reasons: AssessResult["reasons"];
   rules_pending_review: AssessResult["rules_pending_review"];
+  /** The date the rules were evaluated for (YYYY-MM-DD). */
+  as_of: string;
   pack: { id: string; version: string; status: "draft" | "beta" | "verified" };
   disclaimer: string;
   human_review_recommended: boolean;
@@ -51,7 +53,8 @@ export function assessPack(pack: Pack, req: AssessmentRequest): AssessmentOutcom
   const v = validateInputs(pack, req.scenarioType, req.inputs);
   if (!v.ok) return { ok: false, code: "invalid_inputs", message: v.errors.map((e) => `${e.path} ${e.message}`).join("; ") };
 
-  const r = runPack(pack, { scenarioType: req.scenarioType, jurisdiction: req.jurisdiction, inputs: req.inputs, asOf: req.asOf ?? todayAU() });
+  const asOf = req.asOf ?? todayAU();
+  const r = runPack(pack, { scenarioType: req.scenarioType, jurisdiction: req.jurisdiction, inputs: req.inputs, asOf });
   return {
     ok: true,
     result: r,
@@ -62,6 +65,7 @@ export function assessPack(pack: Pack, req: AssessmentRequest): AssessmentOutcom
       escalation_recommended: r.escalation_recommended,
       reasons: r.reasons,
       rules_pending_review: r.rules_pending_review,
+      as_of: asOf,
       pack: { id: m.id, version: m.version, status: m.status },
       disclaimer: DISCLAIMER,
       // Anything short of a verified pack, any escalation, or any unapplied needs_review match calls for a human.

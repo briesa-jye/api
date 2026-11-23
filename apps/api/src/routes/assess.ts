@@ -16,6 +16,13 @@ export const assessBody = z.strictObject({
   scenario_type: z.string().min(1),
   jurisdiction: z.enum(JURISDICTIONS),
   inputs: z.record(z.string(), z.unknown()),
+  /** Answer as the rules stood on this date (YYYY-MM-DD, Australian date). Defaults to today. */
+  as_of: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "as_of must be YYYY-MM-DD").refine((d) => {
+    const t = new Date(`${d}T00:00:00Z`);
+    return !Number.isNaN(t.getTime()) && t.toISOString().startsWith(d);
+  }, "as_of is not a real calendar date").optional(),
+  /** Your own identifier for this assessment, returned in the audit record. Do not put personal information in it. */
+  reference: z.string().min(1).max(200).optional(),
   options: z.strictObject({ ai_notes: z.boolean().optional() }).optional(),
 });
 
@@ -36,7 +43,7 @@ export const assessRoutes: FastifyPluginAsync<{ packs: PackRegistry; store: Stor
       throw new ApiError("not_found_error", "pack_not_found", "No such pack.");
     }
     const m = pack.manifest;
-    const out = assessPack(pack, { scenarioType: b.scenario_type, jurisdiction: b.jurisdiction, inputs: b.inputs });
+    const out = assessPack(pack, { scenarioType: b.scenario_type, jurisdiction: b.jurisdiction, inputs: b.inputs, asOf: b.as_of });
     if (!out.ok) throw new ApiError("invalid_request_error", out.code, out.message);
     req.packId = b.pack;
     const r = out.result;
@@ -70,6 +77,8 @@ export const assessRoutes: FastifyPluginAsync<{ packs: PackRegistry; store: Stor
       ai_assisted_notes: aiNotes,
       ai_status: aiStatus,
       pack: out.core.pack,
+      as_of: out.core.as_of,
+      reference: b.reference ?? null,
       disclaimer: out.core.disclaimer,
       human_review_recommended: out.core.human_review_recommended,
       test_mode: req.auth!.mode === "test",
@@ -80,7 +89,7 @@ export const assessRoutes: FastifyPluginAsync<{ packs: PackRegistry; store: Stor
       packId: m.id, packVersion: m.version,
       ruleVersions: Object.fromEntries(r.reasons.map((x) => [x.rule_id, x.rule_version])),
       inputsHash: createHash("sha256").update(stable(b.inputs)).digest("hex"), // raw inputs are never stored
-      output: response, model: aiModel, test: req.auth!.mode === "test",
+      output: response, model: aiModel, test: req.auth!.mode === "test", reference: b.reference ?? null,
     });
     // Event carries outcome metadata only: never raw inputs.
     await webhooks.emit({

@@ -69,7 +69,20 @@ export interface AuditRecord {
   output: unknown;
   model: string | null;
   test: boolean;
+  /** Caller-supplied reference (their own record id). Never personal information by contract. */
+  reference: string | null;
   createdAt: Date;
+}
+
+export type AuditInput = Omit<AuditRecord, "createdAt" | "reference"> & { reference?: string | null };
+
+export interface AuditListQuery {
+  limit: number;
+  /** Return records strictly older than this position (createdAt, then requestId, descending). */
+  after?: { createdAt: Date; requestId: string };
+  packId?: string;
+  reference?: string;
+  test?: boolean;
 }
 
 export interface IdempotencyRecord {
@@ -164,8 +177,10 @@ export interface Store {
   recordUsage(event: Omit<UsageEvent, "createdAt">): Promise<void>;
   usageSummary(tenantId: string, month: string): Promise<UsageSummaryRow[]>;
 
-  appendAudit(record: Omit<AuditRecord, "createdAt">): Promise<void>;
+  appendAudit(record: AuditInput): Promise<void>;
   getAudit(tenantId: string, requestId: string): Promise<AuditRecord | null>;
+  /** Newest first. Fetch limit + 1 to know whether another page exists. */
+  listAudit(tenantId: string, query: AuditListQuery): Promise<AuditRecord[]>;
 
   /**
    * Atomically claims (tenantId, key) for a request. Exactly one concurrent caller gets `claimed: true`; others get the

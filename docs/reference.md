@@ -68,6 +68,8 @@ Request body:
 | `scenario_type` | string | yes |  |
 | `jurisdiction` | `AU` \| `ACT` \| `NSW` \| `NT` \| `QLD` \| `SA` \| `TAS` \| `VIC` \| `WA` | yes |  |
 | `inputs` | object | yes |  |
+| `as_of` | string | no |  |
+| `reference` | string | no |  |
 | `options` | object | no |  |
 
 Responses: `200`, `400`, `401`, `402`, `403`, `404`, `409`, `429`
@@ -119,6 +121,24 @@ Required scope: `read`
 Responses: `200`, `401`, `402`, `403`, `404`, `429`
 
 ## Audit
+
+### `GET /v1/audit`
+
+**List audit records, newest first**
+
+Cursor-paginated. Pass `next_cursor` back as `starting_after` for the next page. Filter by `pack`, your own `reference`, or `test`.
+
+Required scope: `audit:read`
+
+| Parameter | In | Required | Description |
+|---|---|---|---|
+| `limit` | query | no | 1 to 100, default 25 |
+| `starting_after` | query | no | Cursor from a previous page |
+| `pack` | query | no | Pack id |
+| `reference` | query | no | Exact match on the reference you sent to /v1/assess |
+| `test` | query | no | true or false |
+
+Responses: `200`, `400`, `401`, `402`, `403`, `429`
 
 ### `GET /v1/audit/{request_id}`
 

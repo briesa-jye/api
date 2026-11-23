@@ -2,7 +2,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { FINISHED_DELIVERY_TTL_MS, IDEMPOTENCY_PENDING_MS, IDEMPOTENCY_TTL_MS } from "./types.ts";
 import type {
-  ApiKeyRecord, AuditRecord, IdempotencyClaim, IdempotencyRecord, KeyMode, PurgeResult, Store, Tenant, UsageEvent, UsageSummaryRow,
+  ApiKeyRecord, AuditInput, AuditListQuery, AuditRecord, IdempotencyClaim, IdempotencyRecord, KeyMode, PurgeResult, Store, Tenant, UsageEvent, UsageSummaryRow,
   WebhookDelivery, WebhookEndpoint, WebhookEvent, TenantBillingPatch, TenantMember,
 } from "./types.ts";
 
@@ -119,8 +119,22 @@ export class PrismaStore implements Store {
   }
 
   // --- audit
-  async appendAudit(r: Omit<AuditRecord, "createdAt">) {
-    await this.db.auditRecord.create({ data: { ...r, ruleVersions: json(r.ruleVersions), output: json(r.output) } });
+  async appendAudit(r: AuditInput) {
+    await this.db.auditRecord.create({ data: { ...r, reference: r.reference ?? null, ruleVersions: json(r.ruleVersions), output: json(r.output) } });
+  }
+  async listAudit(tenantId: string, q: AuditListQuery): Promise<AuditRecord[]> {
+    const rows = await this.db.auditRecord.findMany({
+      where: {
+        tenantId,
+        ...(q.packId !== undefined && { packId: q.packId }),
+        ...(q.reference !== undefined && { reference: q.reference }),
+        ...(q.test !== undefined && { test: q.test }),
+        ...(q.after && { OR: [{ createdAt: { lt: q.after.createdAt } }, { createdAt: q.after.createdAt, requestId: { lt: q.after.requestId } }] }),
+      },
+      orderBy: [{ createdAt: "desc" }, { requestId: "desc" }],
+      take: q.limit,
+    });
+    return rows.map((a) => ({ ...a, ruleVersions: a.ruleVersions as Record<string, string> | null, output: a.output }));
   }
   async getAudit(tenantId: string, requestId: string): Promise<AuditRecord | null> {
     const a = await this.db.auditRecord.findUnique({ where: { tenantId_requestId: { tenantId, requestId } } });
