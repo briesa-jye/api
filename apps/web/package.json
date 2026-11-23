@@ -16,7 +16,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.69.0",
-    "marked": "^16",
+    "marked": "^18",
     "motion": "^14.9.1",
     "next": "^16.2.0",
     "radix-ui": "^1.8.1",
