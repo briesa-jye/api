@@ -261,3 +261,13 @@
 .docs-prose th { color: var(--foreground); font-weight: 600; }
 .docs-prose td { color: var(--muted-foreground); }
 .docs-prose blockquote { border-left: 2px solid var(--accent); padding-left: 1rem; margin: 1rem 0; }
+
+/* Data visualisation: validated categorical slots (dark surface), in fixed order. See the dataviz reference palette. */
+:root {
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --viz-grid: oklch(0.28 0 0);
+}
+:root { --series-neutral: oklch(0.6 0 0); }

@@ -1,15 +1,19 @@
+import { DailyChart } from "@/components/charts/DailyChart";
 import { PageHeader, Td, Th } from "@/components/dashboard/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { requireAccount } from "@/lib/account";
+import { loadStats } from "@/lib/analytics";
 import { getStore } from "@/lib/store";
 
 export default async function UsagePage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   const { month: m } = await searchParams;
   const month = m && /^\d{4}-\d{2}$/.test(m) ? m : new Date().toISOString().slice(0, 7);
   const { tenant } = await requireAccount();
-  const rows = (await getStore().usageSummary(tenant.id, month)).sort((a, b) => b.count - a.count);
+  const store = getStore();
+  const [usage, stats] = await Promise.all([store.usageSummary(tenant.id, month), loadStats(store, tenant.id, 30)]);
+  const rows = usage.sort((a, b) => b.count - a.count);
   const live = rows.filter((r) => !r.test).reduce((n, r) => n + r.count, 0);
   const test = rows.filter((r) => r.test).reduce((n, r) => n + r.count, 0);
   return (
@@ -24,6 +28,7 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
         <div className="bg-card p-5"><dt className="text-muted-foreground font-mono text-[0.625rem] tracking-wider uppercase">Live calls</dt><dd className="mt-2 text-2xl tracking-tight">{live}</dd></div>
         <div className="bg-card p-5"><dt className="text-muted-foreground font-mono text-[0.625rem] tracking-wider uppercase">Test calls</dt><dd className="mt-2 text-2xl tracking-tight">{test}</dd></div>
       </dl>
+      <section className="bg-card mb-8 rounded-xl border p-5"><DailyChart data={stats.series} title="Assessments per day, last 30 days" /></section>
       <div className="overflow-x-auto rounded-xl border">
         <table className="w-full min-w-[30rem]">
           <thead className="bg-muted/30 border-b"><tr><Th>Pack</Th><Th>Endpoint</Th><Th>Type</Th><Th className="text-right">Calls</Th></tr></thead>

@@ -1,9 +1,12 @@
-import { AlertTriangle, ExternalLink, UserCheck } from "lucide-react";
+import { AlertTriangle, ArrowRight, ExternalLink, UserCheck } from "lucide-react";
+import { OutcomeSpectrum } from "@/components/charts/OutcomeSpectrum";
+import { CodeTabs, snippetsFor } from "@/components/dashboard/CodeTabs";
 import { CodeBlock } from "@/components/site/CodePanel";
 import { Badge } from "@/components/ui/badge";
 import { API_BASE_URL } from "@/lib/site";
 
-interface Core {
+export interface Core {
+  as_of?: string;
   outcome: string;
   required_actions: { id: string; description: string; rule_id: string }[];
   missing_information: { path: string; description: string; rule_id: string }[];
@@ -14,37 +17,64 @@ interface Core {
   disclaimer: string;
   human_review_recommended: boolean;
 }
-export interface PlaygroundRequest { pack: string; scenario_type: string; jurisdiction: string; inputs: Record<string, unknown> }
+export interface PlaygroundRequest { pack: string; scenario_type: string; jurisdiction: string; inputs: Record<string, unknown>; as_of?: string; reference?: string }
 
 const humanize = (s: string) => s.replace(/_/g, " ");
+const sentence = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const key = (r: { rule_id: string; rule_version: string }) => `${r.rule_id}@${r.rule_version}`;
 
-export function AssessmentResult({ core, request, outcomes }: { core: Core; request: PlaygroundRequest; outcomes: string[] }) {
-  const rank = outcomes.indexOf(core.outcome);
-  const variant = rank <= 0 ? "outline" : rank === outcomes.length - 1 ? "amber" : "subtle";
-  const curl = `curl ${API_BASE_URL}/v1/assess \\\n  -H "Authorization: Bearer $BRIESA_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '${JSON.stringify(request)}'`;
+/**
+ * One assessment, explained: where the outcome sits on its scale, what to do, and the chain of rules that led there
+ * (and the rules that did not apply). `request` is omitted for stored audit records, which keep only a hash of the inputs.
+ */
+export function AssessmentResult({ core, request, outcomes, notTriggered, compare }: {
+  core: Core; request?: PlaygroundRequest; outcomes: string[]; notTriggered?: { id: string; title: string }[]; compare?: Core | null;
+}) {
+  const diff = compare ? {
+    added: compare.reasons.filter((r) => !core.reasons.some((x) => key(x) === key(r))),
+    removed: core.reasons.filter((r) => !compare.reasons.some((x) => key(x) === key(r))),
+  } : null;
 
   return (
     <div className="space-y-6">
-      <div className="bg-card rounded-xl border p-5">
-        <p className="text-muted-foreground font-mono text-[0.625rem] tracking-wider uppercase">Outcome</p>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <Badge variant={variant} size="lg" className="text-sm">{humanize(core.outcome)}</Badge>
-          <span className="text-muted-foreground text-xs">
-            {core.pack.id} v{core.pack.version} <Badge variant="outline" size="sm" className="ml-1">{core.pack.status}</Badge>
-          </span>
+      <section className="bg-card rounded-xl border p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-muted-foreground font-mono text-[0.625rem] tracking-wider uppercase">Outcome</p>
+          <p className="text-muted-foreground text-xs">{core.pack.id} v{core.pack.version} <Badge variant="outline" size="sm" className="ml-1">{core.pack.status}</Badge>{core.as_of && <> · rules as of {core.as_of}</>}</p>
         </div>
-        <div className="mt-4 flex flex-col gap-2 text-sm">
+        <p className="font-display mt-3 text-3xl tracking-tight">{sentence(humanize(core.outcome))}</p>
+        <div className="mt-5"><OutcomeSpectrum outcomes={outcomes} active={core.outcome} /></div>
+        <div className="mt-5 flex flex-col gap-2 text-sm">
           {core.escalation_recommended && <p className="flex items-center gap-2"><AlertTriangle className="text-warning size-4 shrink-0" aria-hidden />Escalation to a person is recommended.</p>}
-          {core.human_review_recommended && <p className="text-muted-foreground flex items-center gap-2"><UserCheck className="size-4 shrink-0" aria-hidden />Human review recommended{core.pack.status !== "verified" ? ` (this pack is ${core.pack.status}, not verified).` : "."}</p>}
+          {core.human_review_recommended && <p className="text-muted-foreground flex items-center gap-2"><UserCheck className="size-4 shrink-0" aria-hidden />Human review recommended{core.pack.status !== "verified" ? ` (this pack is ${core.pack.status})` : ""}.</p>}
         </div>
-      </div>
+      </section>
 
-      <Section title="Required actions" empty="No actions required for these facts." count={core.required_actions.length}>
-        <ul className="divide-y divide-dashed">
-          {core.required_actions.map((a) => (
-            <li key={a.id} className="py-3 text-sm"><p>{a.description}</p><p className="text-muted-foreground mt-1 font-mono text-xs">{a.id} from {a.rule_id}</p></li>
+      {compare && diff && (
+        <section className="rounded-xl border border-dashed p-5">
+          <h3 className="font-display text-base">Compared with {compare.as_of}</h3>
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+            <Badge variant="outline">{humanize(core.outcome)} <span className="text-muted-foreground ml-1">on {core.as_of}</span></Badge><ArrowRight className="text-muted-foreground size-4" aria-hidden />
+            <Badge variant={compare.outcome === core.outcome ? "outline" : "amber"}>{humanize(compare.outcome)} <span className="text-muted-foreground ml-1">on {compare.as_of}</span></Badge>
+          </div>
+          {diff.added.length + diff.removed.length === 0 ? <p className="text-muted-foreground mt-3 text-sm">The same rules applied on both dates, so nothing changed for these facts.</p> : (
+            <ul className="mt-3 space-y-1 font-mono text-xs">
+              {diff.removed.map((r) => <li key={key(r)} className="text-muted-foreground">only on {core.as_of}: {key(r)} {r.title}</li>)}
+              {diff.added.map((r) => <li key={key(r)} className="text-foreground">only on {compare.as_of}: {key(r)} {r.title}</li>)}
+            </ul>
+          )}
+        </section>
+      )}
+
+      <Section title="What to do" empty="No actions required for these facts." count={core.required_actions.length}>
+        <ol className="space-y-px">
+          {core.required_actions.map((a, i) => (
+            <li key={a.id} className="flex gap-3 py-3 text-sm">
+              <span className="bg-muted text-muted-foreground flex size-6 shrink-0 items-center justify-center rounded-full font-mono text-xs">{i + 1}</span>
+              <span><span className="block">{a.description}</span><span className="text-muted-foreground mt-1 block font-mono text-xs">{a.id} from {a.rule_id}</span></span>
+            </li>
           ))}
-        </ul>
+        </ol>
       </Section>
 
       {core.missing_information.length > 0 && (
@@ -55,22 +85,30 @@ export function AssessmentResult({ core, request, outcomes }: { core: Core; requ
         </Section>
       )}
 
-      <Section title="Why: reasons with sources" empty="No rule matched, so the pack's default outcome applies." count={core.reasons.length}>
-        <ul className="divide-y divide-dashed">
+      <Section title="How it decided" empty="No rule matched, so the pack's default outcome applies." count={core.reasons.length}>
+        <ol className="relative ml-3 border-l border-dashed pt-2">
           {core.reasons.map((r) => (
-            <li key={r.rule_id} className="space-y-1.5 py-4 text-sm">
-              <p className="font-medium">{r.title}</p>
-              <p className="text-muted-foreground leading-relaxed">{r.explanation}</p>
-              <p className="text-muted-foreground font-mono text-xs">{r.rule_id}@{r.rule_version} · effective {r.effective_from}{r.effective_to ? ` to ${r.effective_to}` : ""}</p>
+            <li key={r.rule_id} className="relative pb-5 pl-6">
+              <span className="bg-accent absolute top-1.5 -left-[5px] size-2.5 rounded-full" aria-hidden />
+              <p className="text-sm font-medium">{r.title}</p>
+              <p className="text-muted-foreground mt-1 text-sm leading-relaxed">{r.explanation}</p>
+              <p className="text-muted-foreground mt-1.5 font-mono text-xs">{key(r)} · effective {r.effective_from}{r.effective_to ? ` to ${r.effective_to}` : ""}</p>
               {r.source && (
-                <p className="text-xs">
+                <p className="mt-1 text-xs">
                   {r.source.url ? <a href={r.source.url} target="_blank" rel="noopener noreferrer" className="text-accent-hover inline-flex items-center gap-1 underline underline-offset-4">{r.source.instrument}{r.source.section ? `, ${r.source.section}` : ""}<ExternalLink className="size-3" aria-hidden /></a> : <span>{r.source.instrument}{r.source.section ? `, ${r.source.section}` : ""}</span>}
                   {r.source.retrieved && <span className="text-muted-foreground"> (retrieved {r.source.retrieved})</span>}
                 </p>
               )}
             </li>
           ))}
-        </ul>
+          <li className="relative pl-6"><span className="absolute top-1.5 -left-[5px] size-2.5 rounded-full border-2" style={{ borderColor: "var(--series-1)", background: "var(--card)" }} aria-hidden /><p className="text-sm">Result: <b className="font-medium">{humanize(core.outcome)}</b></p></li>
+        </ol>
+        {notTriggered && notTriggered.length > 0 && (
+          <details className="mt-4">
+            <summary className="text-muted-foreground hover:text-foreground cursor-pointer text-sm">{notTriggered.length} rule{notTriggered.length === 1 ? "" : "s"} considered but not triggered</summary>
+            <ul className="text-muted-foreground mt-2 space-y-1 text-xs">{notTriggered.map((r) => <li key={r.id}><span className="font-mono">{r.id}</span> {r.title}</li>)}</ul>
+          </details>
+        )}
       </Section>
 
       {core.rules_pending_review.length > 0 && (
@@ -84,9 +122,9 @@ export function AssessmentResult({ core, request, outcomes }: { core: Core; requ
       <p className="text-muted-foreground text-xs leading-relaxed">{core.disclaimer}</p>
 
       <details className="group">
-        <summary className="text-muted-foreground hover:text-foreground cursor-pointer text-sm">Show the API request and response</summary>
+        <summary className="text-muted-foreground hover:text-foreground cursor-pointer text-sm">{request ? "Use this in your code" : "Show the stored response"}</summary>
         <div className="mt-3 space-y-3">
-          <CodeBlock label="Equivalent request" code={`$ ${curl}`} />
+          {request && <CodeTabs snippets={snippetsFor(API_BASE_URL, request)} />}
           <CodeBlock label="Response (without request_id and test_mode, which the API adds)" code={JSON.stringify(core, null, 2)} />
         </div>
       </details>
