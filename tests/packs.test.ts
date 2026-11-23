@@ -59,6 +59,25 @@ status: active
     const bad = makeWidgetPack({ extraRules: [mk("1.0.0", "2020-01-01", "2024-06-01"), mk("2.0.0", "2024-01-01", null)] });
     expect(errs(bad.dir).join("\n")).toMatch(/overlap/);
   });
+  it("validates per-jurisdiction start dates: only listed jurisdictions, never before effective_from, before effective_to", () => {
+    const mk = (extra: string, to = "") => `id: staged
+version: 1.0.0
+title: t
+description: d
+jurisdictions: [NSW, VIC]
+when: { path: count, op: gt, value: 1 }
+then: { outcome: review }
+source: { instrument: X }
+effective_from: "2012-01-01"
+${to}
+${extra}
+status: active
+`;
+    expect(errs(makeWidgetPack({ extraRules: [mk('effective_from_by_jurisdiction: { VIC: "2013-01-01" }')] }).dir)).toEqual([]);
+    expect(errs(makeWidgetPack({ extraRules: [mk('effective_from_by_jurisdiction: { WA: "2013-01-01" }')] }).dir).join("\n")).toMatch(/names WA, which the rule does not list/);
+    expect(errs(makeWidgetPack({ extraRules: [mk('effective_from_by_jurisdiction: { VIC: "2011-01-01" }')] }).dir).join("\n")).toMatch(/is before effective_from/);
+    expect(errs(makeWidgetPack({ extraRules: [mk('effective_from_by_jurisdiction: { VIC: "2020-01-01" }', 'effective_to: "2019-01-01"')] }).dir).join("\n")).toMatch(/is not before effective_to/);
+  });
   it("rejects code-like conditions", () => {
     const { dir } = makeWidgetPack({ extraRules: [`id: badop
 version: 1.0.0

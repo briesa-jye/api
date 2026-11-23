@@ -46,6 +46,11 @@ export function validatePack(dir: string): ValidationReport {
     if (!r.source && r.status !== "needs_review") err(where, "no source: add one or set status needs_review");
     if (r.status === "needs_review") report.needsReview.push({ kind: "rule", id: r.id });
     if (r.effective_to && r.effective_to <= r.effective_from) err(where, "effective_to must be after effective_from");
+    for (const [j, d] of Object.entries(r.effective_from_by_jurisdiction ?? {})) {
+      if (!r.jurisdictions.includes(j as never)) err(where, `effective_from_by_jurisdiction names ${j}, which the rule does not list`);
+      if (d < r.effective_from) err(where, `effective_from_by_jurisdiction ${j} (${d}) is before effective_from; the rule's effective_from must be the earliest start`);
+      if (r.effective_to && d >= r.effective_to) err(where, `effective_from_by_jurisdiction ${j} (${d}) is not before effective_to`);
+    }
     for (const j of r.jurisdictions) {
       if (j !== "AU" && !manifest.jurisdictions.includes(j) && !manifest.jurisdictions.includes("AU")) err(where, `jurisdiction ${j} not declared in pack.yaml`);
     }

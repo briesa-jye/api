@@ -46,6 +46,7 @@ then:
 source: { instrument: Example Act 2000, section: s 12, url: "https://…", retrieved: "2026-11-01" }
 effective_from: "2026-01-01"
 effective_to: null              # exclusive end date, or leave out
+# effective_from_by_jurisdiction: { WA: "2022-03-31" }   # optional: a later start where the law began later
 status: active                  # active | needs_review | retired
 ```
 

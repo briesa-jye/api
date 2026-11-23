@@ -62,6 +62,8 @@ export const RuleSchema = z.strictObject({
   }),
   source: SourceSchema.optional(),
   effective_from: isoDate,
+  /** Later start dates for particular jurisdictions, when the law began there after `effective_from`. */
+  effective_from_by_jurisdiction: z.partialRecord(z.enum(JURISDICTIONS), isoDate).optional(),
   effective_to: isoDate.nullable().optional(),
   status: z.enum(["active", "needs_review", "retired"]),
 });
@@ -76,6 +78,8 @@ export const ObligationSchema = z.strictObject({
   deadline: z.string().optional(),
   source: SourceSchema.optional(),
   effective_from: isoDate,
+  /** Later start dates for particular jurisdictions, when the law began there after `effective_from`. */
+  effective_from_by_jurisdiction: z.partialRecord(z.enum(JURISDICTIONS), isoDate).optional(),
   effective_to: isoDate.nullable().optional(),
   status: z.enum(["active", "needs_review", "retired"]),
 });

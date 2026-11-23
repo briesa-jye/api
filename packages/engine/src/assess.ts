@@ -38,11 +38,15 @@ export interface AssessResult {
   rules_pending_review: { rule_id: string; rule_version: string; title: string }[];
 }
 
+/** The date a rule starts for a jurisdiction: its own start date if the rule gives one, otherwise the rule's `effective_from`. */
+export const startsOn = (r: Pick<Rule, "effective_from" | "effective_from_by_jurisdiction">, jurisdiction: string): string =>
+  (r.effective_from_by_jurisdiction as Record<string, string> | undefined)?.[jurisdiction] ?? r.effective_from;
+
 export const ruleApplies = (r: Rule, p: Pick<AssessParams, "scenarioType" | "jurisdiction" | "asOf">) =>
   r.status !== "retired" &&
   (!r.scenario_types || r.scenario_types.includes(p.scenarioType)) &&
   (r.jurisdictions.includes("AU") || r.jurisdictions.includes(p.jurisdiction as never)) &&
-  r.effective_from <= p.asOf &&
+  startsOn(r, p.jurisdiction) <= p.asOf &&
   (!r.effective_to || p.asOf < r.effective_to);
 
 export function assess(p: AssessParams): AssessResult {
@@ -73,7 +77,7 @@ export function assess(p: AssessParams): AssessResult {
     result.reasons.push({
       rule_id: rule.id, rule_version: rule.version, title: rule.title,
       explanation: then.reason ?? rule.description, outcome: then.outcome ?? null,
-      source: rule.source ?? null, effective_from: rule.effective_from, effective_to: rule.effective_to ?? null,
+      source: rule.source ?? null, effective_from: startsOn(rule, p.jurisdiction), effective_to: rule.effective_to ?? null,
     });
   }
   result.outcome = outcome;

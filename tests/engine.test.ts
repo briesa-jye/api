@@ -91,3 +91,19 @@ describe("assess", () => {
     expect(inputs).toEqual({ x: 1 });
   });
 });
+
+describe("per-jurisdiction start dates", () => {
+  const staged = rule({ id: "staged", jurisdictions: ["NSW", "WA"], effective_from: "2012-01-01", effective_from_by_jurisdiction: { WA: "2022-03-31" }, then: { outcome: "high" } });
+  const run = (jurisdiction: string, asOf: string) => assess({ ...base, inputs: { x: 1 }, rules: [staged], jurisdiction, asOf });
+
+  it("starts the rule on the jurisdiction's own date, and on effective_from where none is given", () => {
+    expect(run("NSW", "2012-01-01").outcome).toBe("high");
+    expect(run("NSW", "2011-12-31").outcome).toBe("low");
+    expect(run("WA", "2022-03-30").outcome).toBe("low"); // the rule exists, but had not started in WA
+    expect(run("WA", "2022-03-31").outcome).toBe("high");
+  });
+  it("reports the date that applied to this jurisdiction as the reason's effective_from", () => {
+    expect(run("WA", "2026-01-01").reasons[0]!.effective_from).toBe("2022-03-31");
+    expect(run("NSW", "2026-01-01").reasons[0]!.effective_from).toBe("2012-01-01");
+  });
+});

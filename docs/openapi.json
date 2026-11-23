@@ -2740,6 +2740,27 @@
                 "type": "string",
                 "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
               },
+              "effective_from_by_jurisdiction": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "enum": [
+                    "AU",
+                    "ACT",
+                    "NSW",
+                    "NT",
+                    "QLD",
+                    "SA",
+                    "TAS",
+                    "VIC",
+                    "WA"
+                  ]
+                },
+                "additionalProperties": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                }
+              },
               "effective_to": {
                 "anyOf": [
                   {
@@ -2856,6 +2877,27 @@
               "effective_from": {
                 "type": "string",
                 "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "effective_from_by_jurisdiction": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "enum": [
+                    "AU",
+                    "ACT",
+                    "NSW",
+                    "NT",
+                    "QLD",
+                    "SA",
+                    "TAS",
+                    "VIC",
+                    "WA"
+                  ]
+                },
+                "additionalProperties": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                }
               },
               "effective_to": {
                 "anyOf": [
