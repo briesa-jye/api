@@ -3,7 +3,8 @@ import { OutcomePill } from "@/components/charts/OutcomePill";
 import { PageHeader, Td, Th } from "@/components/dashboard/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input, Label, Notice, Select } from "@/components/ui/input";
+import { Input, Label, Notice } from "@/components/ui/input";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { requireAccount } from "@/lib/account";
 import { outcomeLevel } from "@/lib/outcomes";
 import { getRegistry } from "@/lib/packs";
@@ -41,8 +42,8 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
     <>
       <PageHeader title="Audit" description="Every assessment is recorded with the rule versions that decided it. Records keep a hash of the inputs, never the inputs themselves." />
       <form className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_9rem_1fr_1fr_auto]">
-        <div className="space-y-1.5"><Label htmlFor="pack">Pack</Label><Select id="pack" name="pack" defaultValue={q.pack ?? ""}><option value="">All packs</option>{packs.map((p) => <option key={p}>{p}</option>)}</Select></div>
-        <div className="space-y-1.5"><Label htmlFor="mode">Mode</Label><Select id="mode" name="mode" defaultValue={q.mode ?? ""}><option value="">Live and test</option><option value="live">Live</option><option value="test">Test</option></Select></div>
+        <div className="space-y-1.5"><Label htmlFor="pack">Pack</Label><SelectMenu id="pack" name="pack" defaultValue={q.pack ?? ""} emptyLabel="All packs" placeholder="All packs" options={packs.map((p) => ({ value: p, label: p }))} /></div>
+        <div className="space-y-1.5"><Label htmlFor="mode">Mode</Label><SelectMenu id="mode" name="mode" defaultValue={q.mode ?? ""} emptyLabel="Live and test" placeholder="Live and test" options={[{ value: "live", label: "Live" }, { value: "test", label: "Test" }]} /></div>
         <div className="space-y-1.5"><Label htmlFor="ref">Your reference</Label><Input id="ref" name="ref" placeholder="exact match" defaultValue={q.ref} /></div>
         <div className="space-y-1.5"><Label htmlFor="id">Request ID</Label><Input id="id" name="id" placeholder="req_..." defaultValue={q.id} /></div>
         <div className="flex items-end"><Button type="submit" variant="brand" className="h-10 w-full">Filter</Button></div>

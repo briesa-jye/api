@@ -1,23 +1,24 @@
 import "server-only";
 import { JURISDICTIONS } from "@briesa/engine";
-import { flattenSchema, type Field } from "@/lib/schema-fields";
+import { flattenSchema } from "@/lib/schema-fields";
 import { getRegistry } from "@/lib/packs";
+import type { LivePack } from "@/lib/playground-engine";
 
-export interface PlaygroundExample { id: string; jurisdiction: string; inputs: Record<string, unknown>; expectOutcome: string }
-export interface PlaygroundScenario { id: string; description: string; outcomes: string[]; fields: Field[]; examples: PlaygroundExample[] }
-export interface PlaygroundPack { id: string; name: string; status: string; jurisdictions: string[]; scenarios: PlaygroundScenario[] }
+export type PlaygroundPack = LivePack;
 
-/** Packs that have rules, with form fields derived from each scenario type's own input schema. */
-export function playgroundCatalog(): PlaygroundPack[] {
+/** Packs that have rules, with everything the playground needs to run them in the browser: the rules themselves and form fields from each scenario's own input schema. */
+export function playgroundCatalog(): LivePack[] {
   return getRegistry().list().filter((p) => p.rules.length > 0).map((p) => ({
     id: p.manifest.id,
     name: p.manifest.name,
     status: p.manifest.status,
+    version: p.manifest.version,
     jurisdictions: p.manifest.jurisdictions.includes("AU") ? [...JURISDICTIONS] : p.manifest.jurisdictions,
+    rules: p.rules,
     scenarios: Object.entries(p.manifest.scenario_types).map(([id, cfg]) => ({
       id,
       description: cfg.description,
-      outcomes: cfg.outcome.order,
+      outcome: cfg.outcome,
       fields: flattenSchema(p.inputSchemas[id]),
       examples: p.scenarios.filter((s) => s.scenario_type === id).map((s) => ({ id: s.id, jurisdiction: s.jurisdiction, inputs: s.inputs, expectOutcome: s.expect.outcome })),
     })),

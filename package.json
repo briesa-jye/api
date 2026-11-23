@@ -5,7 +5,7 @@
   "packageManager": "pnpm@12.21.0",
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p apps/web",
     "dev": "corepack pnpm --filter @briesa/api dev",
     "pack:validate": "node cli/pack-validate.ts",
     "pack:new": "node cli/pack-new.ts",

@@ -1,6 +1,7 @@
+import { humanize } from "@/lib/text";
 import { outcomeColour } from "./scale";
 
-const human = (s: string) => s.replace(/_/g, " ");
+const human = humanize;
 
 /** Every outcome a scenario can reach, lowest to highest, with the reached one lit. Shows where the answer sits, not just what it is. */
 export function OutcomeSpectrum({ outcomes, active }: { outcomes: string[]; active: string }) {

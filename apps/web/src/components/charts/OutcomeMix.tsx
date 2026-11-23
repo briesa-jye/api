@@ -1,10 +1,11 @@
 "use client";
 
+import { humanize } from "@/lib/text";
 import { useState } from "react";
 import { outcomeColour } from "./scale";
 
 export interface MixRow { packId: string; total: number; outcomes: { outcome: string; count: number; rank: number; of: number }[] }
-const human = (s: string) => s.replace(/_/g, " ");
+const human = humanize;
 
 /** What each pack decided: one 100% bar per pack, segments in outcome order (lowest first) with the name and count beside each. */
 export function OutcomeMix({ rows, title }: { rows: MixRow[]; title: string }) {

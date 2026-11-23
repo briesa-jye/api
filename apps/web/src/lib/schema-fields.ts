@@ -1,3 +1,5 @@
+import { humanize, sentence } from "./text.ts";
+
 /** Turns a pack's JSON Schema (as written for its scenario inputs) into flat form fields and back. Pure, no I/O. */
 export interface Field {
   /** Dot path into the inputs object, e.g. "customer.pep_status". */
@@ -13,7 +15,7 @@ export interface Field {
 
 type Schema = { type?: string; items?: { enum?: unknown[] }; properties?: Record<string, Schema>; required?: string[]; enum?: unknown[]; description?: string; minimum?: number };
 
-const humanize = (k: string) => { const s = k.replace(/_/g, " "); return s[0]!.toUpperCase() + s.slice(1); };
+const label = (k: string) => sentence(humanize(k));
 
 export function flattenSchema(schema: unknown, prefix = "", parentRequired = true): Field[] {
   const s = schema as Schema;
@@ -23,7 +25,7 @@ export function flattenSchema(schema: unknown, prefix = "", parentRequired = tru
     const path = prefix ? `${prefix}.${key}` : key;
     const required = parentRequired && req.has(key);
     if (prop.type === "object") { out.push(...flattenSchema(prop, path, required)); continue; }
-    const base = { path, label: humanize(key), group: prefix, required, description: prop.description };
+    const base = { path, label: label(key), group: prefix, required, description: prop.description };
     if (prop.type === "array" && Array.isArray(prop.items?.enum)) out.push({ ...base, kind: "multi", options: prop.items.enum.map(String) });
     else if (Array.isArray(prop.enum)) out.push({ ...base, kind: "enum", options: prop.enum.map(String) });
     else if (prop.type === "boolean") out.push({ ...base, kind: "boolean" });

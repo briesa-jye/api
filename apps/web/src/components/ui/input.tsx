@@ -20,16 +20,6 @@ export function Label({ className, ...props }: React.ComponentProps<"label">) {
   return <label data-slot="label" className={cn("text-foreground block text-sm font-medium", className)} {...props} />;
 }
 
-export function Select({ className, ...props }: React.ComponentProps<"select">) {
-  return (
-    <select
-      data-slot="select"
-      className={cn("bg-input/30 border-input h-10 w-full rounded-lg border px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/40 focus-visible:ring-3", className)}
-      {...props}
-    />
-  );
-}
-
 export function Notice({ tone = "info", className, ...props }: React.ComponentProps<"div"> & { tone?: "info" | "error" | "success" }) {
   return (
     <div
