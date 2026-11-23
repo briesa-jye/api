@@ -52,3 +52,4 @@ Not covered: the AML/CTF Act and Rules text itself (only AUSTRAC's guidance was 
 - **Bug found and fixed:** an injury with no criteria supplied, or a dangerous incident with no `serious_risk_exposed`, silently defaulted to **not_notifiable**. Both now return needs_information.
 - The website playground now renders multi-select fields (it only supported single values).
 - 10 new scenarios (22 in total).
+- **Found while testing the dashboard's date comparison:** an ACT fracture assessed for a date before 19 November 2025 fell through to "not notifiable" and also told the user to notify WorkSafe ACT. Fixed: before that date it returns needs_information ("check older categories, for example in-patient treatment"), and the regulator rule for the new categories has its own effective date. 11 new scenarios in total (23).

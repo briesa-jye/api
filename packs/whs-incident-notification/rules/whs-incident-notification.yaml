@@ -46,7 +46,7 @@
   title: "Category added by the December 2025 amendments: check whether it applies in your jurisdiction"
   description: "The reported injury or incident falls only in a category added by the December 2025 model amendments. Those categories are notifiable only where the jurisdiction has adopted them. Adoption by this jurisdiction has not been confirmed in this pack."
   jurisdictions: [NSW, NT, QLD, SA, TAS, WA]
-  when: { all: [ { not: *notifiable }, { path: arose_from_work, op: eq, value: true }, { any: [
+  when: &amended_only { all: [ { not: *notifiable }, { path: arose_from_work, op: eq, value: true }, { any: [
         { all: [ { path: incident_type, op: eq, value: injury_or_illness }, { any: [ { path: injury_categories, op: contains, value: pelvis_skull_or_facial_fracture }, { path: injury_categories, op: contains, value: other_serious_fracture }, { path: injury_categories, op: contains, value: serious_crush_injury }, { path: injury_categories, op: contains, value: serious_brain_injury_from_blows } ] } ] },
         { all: [ { path: incident_type, op: eq, value: dangerous_incident }, { path: serious_risk_exposed, op: eq, value: 'yes' }, { any: [ { path: dangerous_incident_categories, op: contains, value: mobile_plant_incident }, { path: dangerous_incident_categories, op: contains, value: serious_fall_of_a_person } ] } ] } ] } ] }
   then:
@@ -56,6 +56,22 @@
     reason: Safe Work Australia says the amended notification duties take legal effect only once adopted into local WHS laws. This pack does not know the adoption status for this jurisdiction.
   source: { instrument: "Model WHS Act ss 36-37 (Safe Work Australia, December 2025 version); explanatory memorandum to the incident notification amendments", url: "https://www.safeworkaustralia.gov.au/sites/default/files/2025-12/model-whs-bill-5_december_2025.pdf", retrieved: "2026-11-23" }
   effective_from: "2025-12-05"
+  status: active
+
+- id: act-amended-category-before-commencement
+  version: 1.0.0
+  title: "ACT: category added in November 2025, assessed before it commenced"
+  description: "The injury or incident falls only in a category that was added to the ACT's incident notification laws on 19 November 2025. On the date assessed, that category was not yet in force, so it does not by itself make the incident notifiable. The injury may still meet an older category."
+  jurisdictions: [ACT]
+  when: *amended_only
+  then:
+    outcome: needs_information
+    escalate: true
+    required_actions: [{ id: check-serious-injury-criteria, description: "These categories were not in force in the ACT on this date. Check the injury or incident against the categories that were, for example injuries requiring immediate treatment as a hospital in-patient, and contact WorkSafe ACT if in doubt." }]
+    reason: The category reported was not notifiable in the ACT before 19 November 2025, but the same injury may meet an older category, so this pack cannot call it not notifiable.
+  source: { instrument: "WorkSafe ACT: Incident Notification amendments (changes commenced 19 November 2025)", url: "https://www.worksafe.act.gov.au/health-and-safety-portal/safety-alerts/incident-notification-amendments", retrieved: "2026-11-23" }
+  effective_from: "2012-01-01"
+  effective_to: "2025-11-19"
   status: active
 
 - id: injury-no-listed-category
@@ -277,14 +293,25 @@
   status: active
 
 - id: regulator-act
-  version: 1.2.0
+  version: 1.3.0
   title: "Notify WorkSafe ACT"
   description: "Where an incident is notifiable in the ACT, notifications go directly to WorkSafe ACT. WorkSafe ACT prefers a phone call first; an online form is also available."
   jurisdictions: [ACT]
-  when: { any: [ *notifiable, *notifiable_act_extra ] }
+  when: *notifiable
   then: { required_actions: [{ id: notify-worksafe-act, description: "Notify WorkSafe ACT by phone on 13 22 81 (business hours) or 0419 120 028 (after hours), or through the online form at worksafe.act.gov.au. Workplace sexual assault incidents use WorkSafe ACT's separate sexual assault notification form." }] }
   source: { instrument: "WorkSafe ACT: Notify WorkSafe ACT (regulator's own page)", url: "https://www.worksafe.act.gov.au/health-and-safety-portal/notify-worksafe", retrieved: "2026-11-23" }
   effective_from: "2020-01-01"
+  status: active
+
+- id: regulator-act-amended
+  version: 1.0.0
+  title: "Notify WorkSafe ACT (amended categories)"
+  description: "Where an incident is notifiable in the ACT, notifications go directly to WorkSafe ACT. WorkSafe ACT prefers a phone call first; an online form is also available."
+  jurisdictions: [ACT]
+  when: *notifiable_act_extra
+  then: { required_actions: [{ id: notify-worksafe-act, description: "Notify WorkSafe ACT by phone on 13 22 81 (business hours) or 0419 120 028 (after hours), or through the online form at worksafe.act.gov.au. Workplace sexual assault incidents use WorkSafe ACT's separate sexual assault notification form." }] }
+  source: { instrument: "WorkSafe ACT: Notify WorkSafe ACT (regulator's own page)", url: "https://www.worksafe.act.gov.au/health-and-safety-portal/notify-worksafe", retrieved: "2026-11-23" }
+  effective_from: "2025-11-19"
   status: active
 
 - id: regulator-tas

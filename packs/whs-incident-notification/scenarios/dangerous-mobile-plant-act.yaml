@@ -5,4 +5,4 @@ scenario_type: classify_incident
 jurisdiction: ACT
 as_of: "2026-11-23"
 inputs: {"incident_type":"dangerous_incident","arose_from_work":true,"dangerous_incident_categories":["mobile_plant_incident"],"serious_risk_exposed":"yes"}
-expect: {"outcome": "notifiable", "escalation_recommended": true, "action_ids": ["notify-regulator-immediately","preserve-incident-site","call-000-if-immediate-risk","notify-worksafe-act","written-notice-if-requested"], "reason_rule_ids": ["notifiable-incident-act-amended","regulator-act","written-notice-followup-act-amended"], "missing_paths": []}
+expect: {"outcome": "notifiable", "escalation_recommended": true, "action_ids": ["notify-regulator-immediately","preserve-incident-site","call-000-if-immediate-risk","notify-worksafe-act","written-notice-if-requested"], "reason_rule_ids": ["notifiable-incident-act-amended","regulator-act-amended","written-notice-followup-act-amended"], "missing_paths": []}

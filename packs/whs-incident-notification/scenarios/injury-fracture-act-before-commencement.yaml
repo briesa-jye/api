@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). The same fracture in the ACT, assessed for a date before the November 2025 categories commenced.
+id: injury-fracture-act-before-commencement
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: ACT
+as_of: "2025-06-01"
+inputs: {"incident_type": "injury_or_illness", "arose_from_work": true, "injury_categories": ["other_serious_fracture"]}
+expect: {"outcome": "needs_information", "escalation_recommended": true, "action_ids": ["check-serious-injury-criteria"], "reason_rule_ids": ["act-amended-category-before-commencement"], "missing_paths": []}
