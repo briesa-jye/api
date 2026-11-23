@@ -22,7 +22,7 @@
     "@briesa/engine": "workspace:*",
     "@briesa/packs": "workspace:*",
     "@electric-sql/pglite": "^0.5.17",
-    "@prisma/client": "^6.19.3",
+    "@prisma/client": "^7.10.1",
     "@scalar/openapi-parser": "^0.29.26",
     "@types/node": "^24",
     "pglite-prisma-adapter": "^0.7.2",

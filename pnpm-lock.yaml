@@ -202,8 +202,8 @@ importers:
         specifier: ^0.5.17
         version: 0.5.17
       '@prisma/client':
-        specifier: ^6.19.3
-        version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
+        specifier: ^7.10.1
+        version: 7.10.1(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
       '@scalar/openapi-parser':
         specifier: ^0.29.26
         version: 0.29.26
@@ -212,7 +212,7 @@ importers:
         version: 24.19.2
       pglite-prisma-adapter:
         specifier: ^0.7.2
-        version: 0.7.2(@electric-sql/pglite@0.5.17)(@prisma/client@6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3))
+        version: 0.7.2(@electric-sql/pglite@0.5.17)(@prisma/client@7.10.1(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3))
       stripe:
         specifier: ^19.3.0
         version: 19.3.0(@types/node@24.19.2)
@@ -353,8 +353,8 @@ importers:
         specifier: ^7.10.1
         version: 7.10.1
       '@prisma/client':
-        specifier: ^6
-        version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
+        specifier: ^7
+        version: 7.10.1(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
       pg:
         specifier: ^8.23.1
         version: 8.23.1
@@ -367,7 +367,7 @@ importers:
         version: 8.23.1
       pglite-prisma-adapter:
         specifier: ^0.7.2
-        version: 0.7.2(@electric-sql/pglite@0.5.17)(@prisma/client@6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3))
+        version: 0.7.2(@electric-sql/pglite@0.5.17)(@prisma/client@7.10.1(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3))
       prisma:
         specifier: ^6
         version: 6.19.3(typescript@5.9.3)
@@ -836,12 +836,15 @@ packages:
   '@prisma/adapter-pg@7.10.1':
     resolution: {integrity: sha512-EP9ruPYHjKP80WZlb5qVaEXKgZjJieBFjAxcBtQnDAHD6+16UN4keVmBh6L/RUpuDQT2FQRbvKNgq5d4Ix+IkQ==}
 
-  '@prisma/client@6.19.3':
-    resolution: {integrity: sha512-mKq3jQFhjvko5LTJFHGilsuQs+W+T3Gm451NzuTDGQxwCzwXHYnIu2zGkRoW+Exq3Rob7yp2MfzSrdIiZVhrBg==}
-    engines: {node: '>=18.18'}
+  '@prisma/client-runtime-utils@7.10.1':
+    resolution: {integrity: sha512-AzoATVIgmO3lcZfM443+9SI7+cyLMW2+Psw4op8WQHpHvHCX//CKxv8fwhiL0yGWF8DjdQrFewxrZo5McBdB8g==}
+
+  '@prisma/client@7.10.1':
+    resolution: {integrity: sha512-5tgAbFGh//zVOC6WPNVgziOErJHYkUE+wmqCwbIyq6IrTXUYtv9y2iBFGh/Owo99Mx0+cr0j1FOrxkYBMuyhaQ==}
+    engines: {node: ^20.19 || ^22.12 || >=24.0}
     peerDependencies:
       prisma: '*'
-      typescript: '>=5.1.0'
+      typescript: '>=5.4.0'
     peerDependenciesMeta:
       prisma:
         optional: true
@@ -3169,7 +3172,11 @@ snapshots:
     transitivePeerDependencies:
       - pg-native
 
-  '@prisma/client@6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)':
+  '@prisma/client-runtime-utils@7.10.1': {}
+
+  '@prisma/client@7.10.1(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)':
+    dependencies:
+      '@prisma/client-runtime-utils': 7.10.1
     optionalDependencies:
       prisma: 6.19.3(typescript@5.9.3)
       typescript: 5.9.3
@@ -4742,10 +4749,10 @@ snapshots:
     optionalDependencies:
       pg-cloudflare: 1.4.1
 
-  pglite-prisma-adapter@0.7.2(@electric-sql/pglite@0.5.17)(@prisma/client@6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)):
+  pglite-prisma-adapter@0.7.2(@electric-sql/pglite@0.5.17)(@prisma/client@7.10.1(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)):
     dependencies:
       '@electric-sql/pglite': 0.5.17
-      '@prisma/client': 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
+      '@prisma/client': 7.10.1(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
       '@prisma/driver-adapter-utils': 7.2.0
       postgres-array: 3.0.4
 
