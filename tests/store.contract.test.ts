@@ -73,15 +73,27 @@ for (const f of storeFactories) {
       expect(await store.getAudit(B, "req_1")).not.toBeNull();
     });
 
-    it("idempotency: per tenant, first write wins, expires after 24h", async () => {
-      const rec = (tenantId: string, body: string) => ({ tenantId, key: "k1", requestHash: "h", status: 200, responseBody: body });
-      await store.saveIdempotency(rec(A, "first"));
-      await store.saveIdempotency(rec(A, "second")); // duplicate is ignored, not an error
-      expect((await store.getIdempotency(A, "k1"))?.responseBody).toBe("first");
-      expect(await store.getIdempotency(B, "k1")).toBeNull();
+    it("idempotency: exactly one concurrent claim wins, others see it pending, then the stored response", async () => {
+      const claims = await Promise.all(Array.from({ length: 8 }, () => store.claimIdempotency(A, "k1", "h")));
+      expect(claims.filter((c) => c.claimed)).toHaveLength(1);
+      const loser = claims.find((c) => !c.claimed);
+      expect(loser && !loser.claimed && loser.record).toMatchObject({ requestHash: "h", status: 0 });
+      await store.completeIdempotency(A, "k1", 200, "body");
+      const again = await store.claimIdempotency(A, "k1", "h");
+      expect(again.claimed === false && again.record).toMatchObject({ status: 200, responseBody: "body" });
+      expect(await store.claimIdempotency(B, "k1", "h")).toEqual({ claimed: true }); // per tenant
+    });
+
+    it("idempotency: release frees the key; abandoned and expired claims can be re-claimed", async () => {
+      expect(await store.claimIdempotency(A, "k2", "h")).toEqual({ claimed: true });
+      await store.releaseIdempotency(A, "k2");
+      expect(await store.claimIdempotency(A, "k2", "h")).toEqual({ claimed: true });
       vi.useFakeTimers({ toFake: ["Date"] });
-      vi.setSystemTime(Date.now() + 25 * 3600_000);
-      expect(await store.getIdempotency(A, "k1")).toBeNull();
+      vi.setSystemTime(Date.now() + 2 * 60_000); // pending for > 60s: the first request died
+      expect(await store.claimIdempotency(A, "k2", "h2")).toEqual({ claimed: true });
+      await store.completeIdempotency(A, "k2", 200, "done");
+      vi.setSystemTime(Date.now() + 25 * 3600_000); // finished records expire after 24h
+      expect(await store.claimIdempotency(A, "k2", "h3")).toEqual({ claimed: true });
     });
 
     it("webhook endpoints: scoped by tenant, arrays round trip, system listing by event, disable cancels pending deliveries", async () => {
@@ -125,7 +137,7 @@ for (const f of storeFactories) {
     it("retention: purges audit by each tenant's own retention, expired idempotency and old finished deliveries", async () => {
       await store.appendAudit(audit(A, "a1")); // tenant A keeps 365 days
       await store.appendAudit(audit(B, "b1")); // tenant B keeps 30 days
-      await store.saveIdempotency({ tenantId: A, key: "k", requestHash: "h", status: 200, responseBody: "{}" });
+      await store.claimIdempotency(A, "k", "h"); await store.completeIdempotency(A, "k", 200, "{}");
       const e = await store.createWebhookEndpoint({ tenantId: A, url: "https://a.example/h", events: ["assessment.completed"], packs: ["*"], secret: "s" });
       const fin = await store.createWebhookDelivery(delivery(A, e.id, new Date()));
       await store.updateWebhookDelivery(fin.id, { status: "succeeded", nextAttemptAt: null });
@@ -178,7 +190,7 @@ for (const f of storeFactories) {
 
     it("erasure: removes one tenant's assessment data and nothing else", async () => {
       await store.appendAudit(audit(A, "a1")); await store.appendAudit(audit(B, "b1"));
-      await store.saveIdempotency({ tenantId: A, key: "k", requestHash: "h", status: 200, responseBody: "{}" });
+      await store.claimIdempotency(A, "k", "h"); await store.completeIdempotency(A, "k", 200, "{}");
       await store.recordUsage({ tenantId: A, keyId: "k", packId: "p", endpoint: "assess", test: false, month: "2026-11" });
       const e = await store.createWebhookEndpoint({ tenantId: A, url: "https://a.example/h", events: ["assessment.completed"], packs: ["*"], secret: "s" });
       await store.createWebhookDelivery(delivery(A, e.id, new Date()));

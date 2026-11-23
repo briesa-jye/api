@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { FINISHED_DELIVERY_TTL_MS, IDEMPOTENCY_TTL_MS } from "./types.ts";
+import { FINISHED_DELIVERY_TTL_MS, IDEMPOTENCY_PENDING_MS, IDEMPOTENCY_TTL_MS } from "./types.ts";
 import type {
-  ApiKeyRecord, AuditRecord, IdempotencyRecord, Store, Tenant, UsageEvent, UsageSummaryRow,
+  ApiKeyRecord, AuditRecord, IdempotencyClaim, IdempotencyRecord, Store, Tenant, UsageEvent, UsageSummaryRow,
   WebhookDelivery, WebhookEndpoint, WebhookEvent, PurgeResult, TenantBillingPatch, TenantMember,
 } from "./types.ts";
 
@@ -130,11 +130,25 @@ export class MemoryStore implements Store {
     return this.audits.find((a) => a.tenantId === tenantId && a.requestId === requestId) ?? null;
   }
 
-  async getIdempotency(tenantId: string, key: string) {
-    return this.idem.find((r) => r.tenantId === tenantId && r.key === key && r.createdAt.getTime() > Date.now() - IDEMPOTENCY_TTL_MS) ?? null;
+  async claimIdempotency(tenantId: string, key: string, requestHash: string): Promise<IdempotencyClaim> {
+    const now = Date.now();
+    const i = this.idem.findIndex((r) => r.tenantId === tenantId && r.key === key);
+    if (i >= 0) {
+      const r = this.idem[i]!;
+      const expired = r.createdAt.getTime() <= now - IDEMPOTENCY_TTL_MS;
+      const abandoned = r.status === 0 && r.createdAt.getTime() <= now - IDEMPOTENCY_PENDING_MS;
+      if (!expired && !abandoned) return { claimed: false, record: { ...r } };
+      this.idem.splice(i, 1);
+    }
+    this.idem.push({ tenantId, key, requestHash, status: 0, responseBody: "", createdAt: new Date() });
+    return { claimed: true };
   }
-  async saveIdempotency(r: Omit<IdempotencyRecord, "createdAt">) {
-    this.idem.push({ ...r, createdAt: new Date() });
+  async completeIdempotency(tenantId: string, key: string, status: number, responseBody: string) {
+    const r = this.idem.find((x) => x.tenantId === tenantId && x.key === key);
+    if (r) { r.status = status; r.responseBody = responseBody; }
+  }
+  async releaseIdempotency(tenantId: string, key: string) {
+    this.idem = this.idem.filter((r) => !(r.tenantId === tenantId && r.key === key));
   }
 
   private endpoints: WebhookEndpoint[] = [];

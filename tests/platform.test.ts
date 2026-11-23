@@ -148,6 +148,29 @@ describe("idempotency", () => {
     expect(r.json().error.code).toBe("idempotency_key_reused");
   });
 
+  it("runs the handler once when identical requests arrive at the same time", async () => {
+    const { app, mint, tenantA, auth, calls } = await setup();
+    const k = await mint(tenantA.id, ["assess"]);
+    const h = auth(k, { "idempotency-key": "race" });
+    const rs = await Promise.all(Array.from({ length: 6 }, () => app.inject({ method: "POST", url: "/v1/_echo", headers: h, payload: { a: 1 } })));
+    expect(calls()).toBe(1);
+    for (const r of rs) {
+      expect([200, 409]).toContain(r.statusCode);
+      if (r.statusCode === 409) expect(r.json().error.code).toBe("request_in_progress");
+    }
+    expect(rs.filter((r) => r.statusCode === 200 && !r.headers["idempotent-replayed"])).toHaveLength(1);
+  });
+
+  it("a 5xx releases the key so the client can retry", async () => {
+    const { app, mint, tenantA, auth } = await setup();
+    let n = 0;
+    app.post("/v1/_flaky", { config: { scope: "assess" } }, async () => { if (n++ === 0) throw new Error("boom"); return { ok: true }; });
+    const k = await mint(tenantA.id, ["assess"]);
+    const h = auth(k, { "idempotency-key": "flaky" });
+    expect((await app.inject({ method: "POST", url: "/v1/_flaky", headers: h, payload: {} })).statusCode).toBe(500);
+    expect((await app.inject({ method: "POST", url: "/v1/_flaky", headers: h, payload: {} })).statusCode).toBe(200);
+  });
+
   it("without a key, every call runs", async () => {
     const { app, mint, tenantA, auth, calls } = await setup();
     const k = await mint(tenantA.id, ["assess"]);

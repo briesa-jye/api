@@ -82,6 +82,9 @@ export interface IdempotencyRecord {
 }
 
 export const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
+/** A claim with no result (status 0) older than this is treated as abandoned (the request died) and can be re-claimed. */
+export const IDEMPOTENCY_PENDING_MS = 60 * 1000;
+export type IdempotencyClaim = { claimed: true } | { claimed: false; record: IdempotencyRecord };
 export const FINISHED_DELIVERY_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 export interface PurgeResult { audit: number; idempotency: number; deliveries: number }
@@ -164,8 +167,15 @@ export interface Store {
   appendAudit(record: Omit<AuditRecord, "createdAt">): Promise<void>;
   getAudit(tenantId: string, requestId: string): Promise<AuditRecord | null>;
 
-  getIdempotency(tenantId: string, key: string): Promise<IdempotencyRecord | null>;
-  saveIdempotency(record: Omit<IdempotencyRecord, "createdAt">): Promise<void>;
+  /**
+   * Atomically claims (tenantId, key) for a request. Exactly one concurrent caller gets `claimed: true`; others get the
+   * existing record, whose status is 0 while the first request is still running. Expired or abandoned records are re-claimable.
+   */
+  claimIdempotency(tenantId: string, key: string, requestHash: string): Promise<IdempotencyClaim>;
+  /** Stores the response for a claimed key so later identical requests replay it. */
+  completeIdempotency(tenantId: string, key: string, status: number, responseBody: string): Promise<void>;
+  /** Drops a claim (the request failed with a 5xx) so the client can retry with the same key. */
+  releaseIdempotency(tenantId: string, key: string): Promise<void>;
 
   createWebhookEndpoint(input: Omit<WebhookEndpoint, "id" | "createdAt" | "disabledAt">): Promise<WebhookEndpoint>;
   listWebhookEndpoints(tenantId: string): Promise<WebhookEndpoint[]>;

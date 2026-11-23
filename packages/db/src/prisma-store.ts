@@ -1,8 +1,8 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { FINISHED_DELIVERY_TTL_MS, IDEMPOTENCY_TTL_MS } from "./types.ts";
+import { FINISHED_DELIVERY_TTL_MS, IDEMPOTENCY_PENDING_MS, IDEMPOTENCY_TTL_MS } from "./types.ts";
 import type {
-  ApiKeyRecord, AuditRecord, IdempotencyRecord, KeyMode, PurgeResult, Store, Tenant, UsageEvent, UsageSummaryRow,
+  ApiKeyRecord, AuditRecord, IdempotencyClaim, IdempotencyRecord, KeyMode, PurgeResult, Store, Tenant, UsageEvent, UsageSummaryRow,
   WebhookDelivery, WebhookEndpoint, WebhookEvent, TenantBillingPatch, TenantMember,
 } from "./types.ts";
 
@@ -128,11 +128,32 @@ export class PrismaStore implements Store {
   }
 
   // --- idempotency
-  async getIdempotency(tenantId: string, key: string): Promise<IdempotencyRecord | null> {
-    return this.db.idempotencyRecord.findFirst({ where: { tenantId, key, createdAt: { gt: new Date(Date.now() - IDEMPOTENCY_TTL_MS) } } });
+  async claimIdempotency(tenantId: string, key: string, requestHash: string): Promise<IdempotencyClaim> {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await this.db.idempotencyRecord.create({ data: { tenantId, key, requestHash, status: 0, responseBody: "" } });
+        return { claimed: true };
+      } catch (e) {
+        if (!isUnique(e)) throw e;
+      }
+      const existing = await this.db.idempotencyRecord.findUnique({ where: { tenantId_key: { tenantId, key } } });
+      if (!existing) continue; // released between our insert and read: try again
+      const now = Date.now();
+      const expired = existing.createdAt.getTime() <= now - IDEMPOTENCY_TTL_MS;
+      const abandoned = existing.status === 0 && existing.createdAt.getTime() <= now - IDEMPOTENCY_PENDING_MS;
+      if (!expired && !abandoned) return { claimed: false, record: existing };
+      // Only the caller whose delete matches this exact row may re-claim it.
+      await this.db.idempotencyRecord.deleteMany({ where: { tenantId, key, createdAt: existing.createdAt } });
+    }
+    const last = await this.db.idempotencyRecord.findUnique({ where: { tenantId_key: { tenantId, key } } });
+    if (last) return { claimed: false, record: last };
+    throw new Error("could not claim idempotency key");
   }
-  async saveIdempotency(r: Omit<IdempotencyRecord, "createdAt">) {
-    try { await this.db.idempotencyRecord.create({ data: r }); } catch (e) { if (!isUnique(e)) throw e; }
+  async completeIdempotency(tenantId: string, key: string, status: number, responseBody: string) {
+    await this.db.idempotencyRecord.updateMany({ where: { tenantId, key }, data: { status, responseBody } });
+  }
+  async releaseIdempotency(tenantId: string, key: string) {
+    await this.db.idempotencyRecord.deleteMany({ where: { tenantId, key } });
   }
 
   // --- webhooks

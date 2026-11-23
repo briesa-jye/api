@@ -32,6 +32,8 @@ declare module "fastify" {
     scopes: string[];
     packId?: string;
     reqId: string;
+    /** True while this request holds an idempotency claim that onSend must complete or release. */
+    idemClaimed?: boolean;
   }
   interface FastifyContextConfig extends RouteConfig {}
 }
@@ -137,38 +139,41 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
     reply.header("x-briesa-mode", rec.mode);
   });
 
-  // Idempotency: replay the stored response for a repeated key + identical body.
-  app.addHook("preHandler", async (req, reply) => {
-    if (req.method !== "POST" || !req.auth || req.routeOptions.config.idempotent === false) return;
+  // Idempotency. The key is claimed atomically before the handler runs, so concurrent identical requests run once:
+  // later ones replay the stored response, or get a 409 while the first is still in flight.
+  const idemHash = (req: FastifyRequest) =>
+    createHash("sha256").update(`${req.method} ${req.routeOptions.url}\n${JSON.stringify(req.body ?? null)}`).digest("hex");
+  const idemKeyOf = (req: FastifyRequest): string | null => {
+    if (req.method !== "POST" || !req.auth || req.routeOptions.config.idempotent === false) return null;
     const key = req.headers["idempotency-key"];
-    if (typeof key !== "string" || key.length === 0) return;
+    return typeof key === "string" && key.length > 0 ? key : null;
+  };
+
+  app.addHook("preHandler", async (req, reply) => {
+    const key = idemKeyOf(req);
+    if (!key) return;
     if (key.length > 200) throw new ApiError("invalid_request_error", "invalid_idempotency_key", "Idempotency-Key too long.");
-    const requestHash = createHash("sha256")
-      .update(`${req.method} ${req.routeOptions.url}\n${JSON.stringify(req.body ?? null)}`)
-      .digest("hex");
-    const prior = await store.getIdempotency(req.auth.tenantId, key);
-    if (!prior) return;
-    if (prior.requestHash !== requestHash) {
+    const requestHash = idemHash(req);
+    const claim = await store.claimIdempotency(req.auth!.tenantId, key, requestHash);
+    if (claim.claimed) { req.idemClaimed = true; return; }
+    if (claim.record.requestHash !== requestHash) {
       throw new ApiError("idempotency_error", "idempotency_key_reused", "Idempotency-Key was already used with a different request.");
     }
+    if (claim.record.status === 0) {
+      reply.header("retry-after", 1);
+      throw new ApiError("idempotency_error", "request_in_progress", "A request with this Idempotency-Key is still being processed. Retry shortly.");
+    }
     reply.header("idempotent-replayed", "true");
-    return reply.code(prior.status).type("application/json").send(prior.responseBody);
+    return reply.code(claim.record.status).type("application/json").send(claim.record.responseBody);
   });
 
   app.addHook("onSend", async (req, reply, payload) => {
-    if (req.method !== "POST" || !req.auth || req.routeOptions.config.idempotent === false) return payload;
-    const key = req.headers["idempotency-key"];
-    if (typeof key !== "string" || key.length === 0 || key.length > 200) return payload;
-    if (reply.getHeader("idempotent-replayed") || reply.statusCode >= 500 || typeof payload !== "string") return payload;
-    const requestHash = createHash("sha256")
-      .update(`${req.method} ${req.routeOptions.url}\n${JSON.stringify(req.body ?? null)}`)
-      .digest("hex");
-    if (!(await store.getIdempotency(req.auth.tenantId, key))) {
-      await store.saveIdempotency({
-        tenantId: req.auth.tenantId, key, requestHash,
-        status: reply.statusCode, responseBody: payload,
-      });
-    }
+    if (!req.idemClaimed) return payload;
+    req.idemClaimed = false;
+    const key = idemKeyOf(req)!;
+    // 5xx and non-JSON bodies are never stored: free the key so the client can retry.
+    if (reply.statusCode >= 500 || typeof payload !== "string") await store.releaseIdempotency(req.auth!.tenantId, key);
+    else await store.completeIdempotency(req.auth!.tenantId, key, reply.statusCode, payload);
     return payload;
   });
 
