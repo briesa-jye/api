@@ -70,7 +70,7 @@ describe("playground live engine", () => {
   it("timeline shows the ACT fracture answer changing on 19 November 2025, with nothing in force before the first rule", () => {
     const { values } = valuesFor("injury-fracture-act");
     const segs = timeline(whs, whsScn, "ACT", values);
-    expect(segs[0]).toMatchObject({ from: null, noRules: true });
+    expect(segs[0]).toMatchObject({ from: null, noRules: false, outcome: "needs_information" }); // before the model laws started in the ACT: earlier laws applied
     const before = segs.find((s) => s.to === "2025-11-19");
     const after = segs.find((s) => s.from === "2025-11-19");
     expect(before?.outcome).toBe("needs_information");
@@ -78,6 +78,18 @@ describe("playground live engine", () => {
     for (let i = 1; i < segs.length; i++) expect(segs[i]!.from).toBe(segs[i - 1]!.to); // periods tile with no gaps
     expect(segs.at(-1)!.to).toBeNull();
     expect(timeline(whs, whsScn, "ACT", {})).toEqual([]); // nothing until the required questions are answered
+  });
+
+  it("timeline starts each jurisdiction's rules on the date the model laws began there", () => {
+    const death: Values = { incident_type: "death", arose_from_work: "true" };
+    const wa = timeline(whs, whsScn, "WA", death).filter((s) => !s.noRules);
+    expect(wa.map((s) => [s.from, s.outcome])).toEqual([[null, "needs_information"], ["2022-03-31", "notifiable"]]); // the pre-commencement period is "any earlier date"
+    const sa = timeline(whs, whsScn, "SA", death).filter((s) => !s.noRules);
+    expect(sa.find((s) => s.outcome === "notifiable")?.from).toBe("2013-01-01");
+    const nsw = timeline(whs, whsScn, "NSW", death).filter((s) => !s.noRules);
+    expect(nsw.find((s) => s.outcome === "notifiable")?.from).toBe("2012-01-01");
+    // Before commencement the answer is "earlier laws applied", never a silent "not notifiable".
+    expect(runLive(whs, whsScn, "WA", death, "2021-06-01")).toMatchObject({ status: "ok", core: { outcome: "needs_information" } });
   });
 
   it("rulePaths finds the inputs a rule reads", () => {

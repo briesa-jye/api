@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). WA before the model WHS laws started there (31 March 2022): the pack must not apply them.
+id: death-wa-before-commencement
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: WA
+as_of: "2022-01-01"
+inputs: {"incident_type": "death", "arose_from_work": true}
+expect: {"outcome": "needs_information", "escalation_recommended": true, "action_ids": ["check-earlier-whs-laws"], "reason_rule_ids": ["before-commencement-wa"], "missing_paths": []}

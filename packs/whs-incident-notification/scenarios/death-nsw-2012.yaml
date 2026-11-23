@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). NSW in 2012, after the model WHS laws started there on 1 January 2012.
+id: death-nsw-2012
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: NSW
+as_of: "2012-06-01"
+inputs: {"incident_type": "death", "arose_from_work": true}
+expect: {"outcome": "notifiable", "escalation_recommended": true, "action_ids": ["notify-regulator-immediately","preserve-incident-site","call-000-if-immediate-risk","notify-safework-nsw","written-notice-if-requested"], "reason_rule_ids": ["notifiable-incident","regulator-nsw","written-notice-followup"], "missing_paths": []}

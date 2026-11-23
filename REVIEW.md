@@ -21,7 +21,7 @@ Corrected:
 - **ACT sexual assault** has been notifiable since 9 June 2023. Added rule `act-sexual-assault-notifiable`.
 
 Not fixed, needs a decision or a human (also in RULES_TO_VERIFY.md):
-1. `effective_from: 2020-01-01` is a placeholder on every rule.
+1. (Done in 0.4.0, below.) `effective_from: 2020-01-01` was a placeholder on every rule.
 2. (Done in 0.3.0, below.) The caller decided whether serious-injury and dangerous-incident criteria were met.
 3. Rule `december-2025-amendments-not-yet-law` is wrong for the ACT. Other jurisdictions' adoption is unconfirmed (search results suggest NSW was still considering them and QLD had a violent-incidents bill before Parliament; unverified).
 4. Other regulators' phone numbers are unchecked against their own pages.
@@ -53,3 +53,12 @@ Not covered: the AML/CTF Act and Rules text itself (only AUSTRAC's guidance was 
 - The website playground now renders multi-select fields (it only supported single values).
 - 10 new scenarios (22 in total).
 - **Found while testing the dashboard's date comparison:** an ACT fracture assessed for a date before 19 November 2025 fell through to "not notifiable" and also told the user to notify WorkSafe ACT. Fixed: before that date it returns needs_information ("check older categories, for example in-patient treatment"), and the regulator rule for the new categories has its own effective date. 11 new scenarios in total (23).
+
+## whs-incident-notification 0.4.0: real start dates
+
+- Source: Safe Work Australia, [History of the model WHS laws](https://www.safeworkaustralia.gov.au/law-and-regulation/history-model-whs-laws): the Commonwealth, ACT, NSW, NT and QLD implemented the model laws on 1 January 2012; SA and TAS on 1 January 2013; WA passed its version in November 2020 and it became operational on 31 March 2022. (The NT was 2012, not 2013 as I first assumed from memory.)
+- New engine feature: a rule can give `effective_from_by_jurisdiction` for a later start in particular jurisdictions, so one rule keeps one definition. The validator rejects overrides for jurisdictions the rule does not list, before `effective_from`, or after `effective_to`.
+- Every placeholder rule and obligation now starts on the real date, and the rules changed have a new minor version.
+- New rules `before-commencement-2012`, `before-commencement-2013` and `before-commencement-wa`: on a date before the model laws started in a jurisdiction, the answer is needs_information ("earlier laws applied, not encoded"), not a silent "not notifiable". Their start of 2000-01-01 only means "any earlier date".
+- 4 new scenarios around the boundaries (27 in total).
+- Still assumed, flagged for a practitioner: that the incident notification sections started with each Act, that the 2012 wording matched what is encoded, and WA's variations. Commonwealth (Comcare) workplaces are still not encoded.

@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). SA in 2012: the model WHS laws started there on 1 January 2013.
+id: death-sa-before-commencement
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: SA
+as_of: "2012-06-01"
+inputs: {"incident_type": "death", "arose_from_work": true}
+expect: {"outcome": "needs_information", "escalation_recommended": true, "action_ids": ["check-earlier-whs-laws"], "reason_rule_ids": ["before-commencement-2013"], "missing_paths": []}

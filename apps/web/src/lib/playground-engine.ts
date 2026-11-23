@@ -1,4 +1,4 @@
-import type { Condition, OutcomeConfig, Rule } from "@briesa/engine";
+import { startsOn, type Condition, type OutcomeConfig, type Rule } from "@briesa/engine";
 import { assessCore, todayAU, type AssessmentCore } from "@briesa/packs/core";
 import { buildInputs, type Field } from "./schema-fields.ts";
 import { humanize } from "./text.ts";
@@ -22,7 +22,7 @@ export type LiveResult =
 const filled = (v: string | undefined) => v !== undefined && v !== "";
 const corePack = (p: LivePack) => ({ manifest: { id: p.id, version: p.version, status: p.status }, rules: p.rules });
 const applies = (r: Rule, jurisdiction: string) => r.jurisdictions.includes(jurisdiction as never);
-const inForce = (r: Rule, on: string) => r.status === "active" && r.effective_from <= on && (!r.effective_to || on < r.effective_to);
+const inForce = (r: Rule, jurisdiction: string, on: string) => r.status === "active" && startsOn(r, jurisdiction) <= on && (!r.effective_to || on < r.effective_to);
 
 /** Required fields the person has not answered yet. */
 export function missingRequired(fields: Field[], values: Values): Field[] {
@@ -38,7 +38,7 @@ export function runLive(pack: LivePack, scenario: LiveScenario, jurisdiction: st
   const { core } = assessCore(corePack(pack), scenario.outcome, { scenarioType: scenario.id, jurisdiction, inputs, asOf: asOf || undefined });
   const fired = new Set(core.reasons.map((r) => r.rule_id));
   const notTriggered = pack.rules
-    .filter((r) => applies(r, jurisdiction) && inForce(r, core.as_of) && !fired.has(r.id))
+    .filter((r) => applies(r, jurisdiction) && inForce(r, jurisdiction, core.as_of) && !fired.has(r.id))
     .map((r) => ({ id: r.id, title: r.title }));
   return { status: "ok", core, notTriggered, inputs };
 }
@@ -94,26 +94,31 @@ export function whatIf(pack: LivePack, scenario: LiveScenario, jurisdiction: str
     .slice(0, limit);
 }
 
+/** Rules that say "before the law started" begin on this date, meaning "any earlier date". The timeline shows that period as "Earlier", not as a real day. */
+export const TIMELINE_HORIZON = "2000-01-01";
+
 export interface Segment { from: string | null; to: string | null; outcome: string; /** No rule was in force for this jurisdiction. */ noRules: boolean; rules: string[] }
 
 /** How the answer to the same facts changes across time, as each rule starts or ends. Adjacent periods with identical results are merged. */
 export function timeline(pack: LivePack, scenario: LiveScenario, jurisdiction: string, values: Values): Segment[] {
   if (missingRequired(scenario.fields, values).length > 0) return [];
   const relevant = pack.rules.filter((r) => r.status === "active" && applies(r, jurisdiction));
-  const points = [...new Set(relevant.flatMap((r) => [r.effective_from, r.effective_to ?? ""]).filter(Boolean))].sort();
+  const points = [...new Set(relevant.flatMap((r) => [startsOn(r, jurisdiction), r.effective_to ?? ""]).filter(Boolean))].sort();
   if (points.length === 0) return [];
   const dayBefore = (d: string) => new Date(new Date(`${d}T00:00:00Z`).getTime() - 86_400_000).toISOString().slice(0, 10);
   const starts: (string | null)[] = [null, ...points];
   const segs: Segment[] = starts.map((from, i) => {
     const probe = from === null ? dayBefore(points[0]!) : from;
     const core = outcomeAt(pack, scenario, jurisdiction, values, probe);
-    return { from, to: starts[i + 1] ?? null, outcome: core.outcome, noRules: !relevant.some((r) => inForce(r, probe)), rules: core.reasons.map((r) => `${r.rule_id}@${r.rule_version}`) };
+    return { from, to: starts[i + 1] ?? null, outcome: core.outcome, noRules: !relevant.some((r) => inForce(r, jurisdiction, probe)), rules: core.reasons.map((r) => `${r.rule_id}@${r.rule_version}`) };
   });
   const merged: Segment[] = [];
   for (const s of segs) {
     const last = merged.at(-1);
     if (last && last.outcome === s.outcome && last.noRules === s.noRules && last.rules.join() === s.rules.join()) last.to = s.to; else merged.push({ ...s });
   }
+  // A leading "no rules" gap that ends at the horizon is just the unbounded past: fold it into the period that starts there.
+  if (merged.length > 1 && merged[0]!.noRules && merged[1]!.from === TIMELINE_HORIZON) { merged.shift(); merged[0]!.from = null; }
   return merged;
 }
 

@@ -5,7 +5,8 @@
   jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
   deadline: Immediately after becoming aware
   source: { instrument: "Model WHS Act Part 3 (Safe Work Australia: Incident reporting)", url: "https://www.safeworkaustralia.gov.au/duties-tool/construction/duties-information/incident-reporting", retrieved: "2026-11-22" }
-  effective_from: "2020-01-01"
+  effective_from: "2012-01-01"
+  effective_from_by_jurisdiction: { SA: "2013-01-01", TAS: "2013-01-01", WA: "2022-03-31" }
   status: active
 - id: preserve-incident-site
   title: Preserve the incident site
@@ -14,7 +15,8 @@
   jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
   deadline: Until an inspector arrives or directs otherwise
   source: { instrument: "Model WHS Act Part 3 (Safe Work Australia: Incident reporting; Health care code of practice)", url: "https://www.safeworkaustralia.gov.au/book/health-care-and-social-assistance/managing-whs-risks/incident-notification", retrieved: "2026-11-22" }
-  effective_from: "2020-01-01"
+  effective_from: "2012-01-01"
+  effective_from_by_jurisdiction: { SA: "2013-01-01", TAS: "2013-01-01", WA: "2022-03-31" }
   status: active
 - id: keep-construction-risk-records
   title: Keep risk assessment, WHS management plan and SWMS copies after a notifiable incident (construction)
@@ -23,7 +25,8 @@
   jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
   deadline: 2 years after the incident
   source: { instrument: "Model WHS Regulations Part 11.3 (Safe Work Australia: Incident reporting, construction duties information)", url: "https://www.safeworkaustralia.gov.au/duties-tool/construction/duties-information/incident-reporting", retrieved: "2026-11-22" }
-  effective_from: "2020-01-01"
+  effective_from: "2012-01-01"
+  effective_from_by_jurisdiction: { SA: "2013-01-01", TAS: "2013-01-01", WA: "2022-03-31" }
   status: active
 - id: keep-incident-record
   title: Keep a record of each notifiable incident for at least 5 years
@@ -32,5 +35,6 @@
   jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
   deadline: At least 5 years from the day notice is given to the regulator
   source: { instrument: "Model WHS Act s 38(7), December 2025 version (Safe Work Australia)", url: "https://www.safeworkaustralia.gov.au/sites/default/files/2025-12/model-whs-bill-5_december_2025.pdf", retrieved: "2026-11-23" }
-  effective_from: "2020-01-01"
+  effective_from: "2012-01-01"
+  effective_from_by_jurisdiction: { SA: "2013-01-01", TAS: "2013-01-01", WA: "2022-03-31" }
   status: active

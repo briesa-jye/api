@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). WA the day after the model WHS laws started there.
+id: death-wa-after-commencement
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: WA
+as_of: "2022-04-01"
+inputs: {"incident_type": "death", "arose_from_work": true}
+expect: {"outcome": "notifiable", "escalation_recommended": true, "action_ids": ["notify-regulator-immediately","preserve-incident-site","call-000-if-immediate-risk","notify-worksafe-wa","written-notice-if-requested"], "reason_rule_ids": ["notifiable-incident","regulator-wa","written-notice-followup"], "missing_paths": []}

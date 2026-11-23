@@ -3,7 +3,7 @@ name: WHS incident notification
 industry: work-health-and-safety
 regulators: [SafeWork NSW, WorkSafe Victoria, WorkSafe Queensland, SafeWork SA, WorkSafe WA, WorkSafe ACT, WorkSafe Tasmania, NT WorkSafe]
 jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, VIC, WA]
-version: 0.3.0
+version: 0.4.0
 status: draft
 maintainers: [Briesa]
 licence_tier: standard
