@@ -15,7 +15,7 @@
     "@electric-sql/pglite": "^0.5.17",
     "@types/pg": "^8.23.1",
     "pglite-prisma-adapter": "^0.7.2",
-    "prisma": "^6"
+    "prisma": "^7"
   },
   "scripts": {
     "postinstall": "DATABASE_URL=${DATABASE_URL:-postgresql://localhost/placeholder} prisma generate"
