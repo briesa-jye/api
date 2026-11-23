@@ -8,8 +8,6 @@ Primary-source note: AUSTRAC and Safe Work Australia pages were read in a browse
 
 ### Needs-review items in the pack
 - Rule `foreign-person-risk-factor`: no source read says foreign-person status changes CDD. Confirm whether and how it should matter (it would be an AUSTRAC risk factor, a FIRB matter, or neither).
-- Obligation `enrol-with-austrac`: the 29 July 2026 enrolment deadline appeared only in a search-result summary. Confirm on the AUSTRAC page.
-- Obligation `aml-ctf-program-and-compliance-officer`: reported as required from 1 July 2026. Confirm from the Act, and what the program must contain.
 - Obligation `ongoing-cdd`: not read.
 
 ### Not encoded (needs reading and rules)
@@ -29,7 +27,7 @@ Primary-source note: AUSTRAC and Safe Work Australia pages were read in a browse
 ## whs-incident-notification
 
 ### Needs-review items in the pack
-- Rule `written-notice-followup`: written notice after immediate notification. Timeframe not read.
+- None. See REVIEW.md for the items found in the 2026-11-23 desk review.
 
 ### Not encoded (needs reading and rules)
 - The statutory definitions of "serious injury or illness" and "dangerous incident" (model WHS Act ss 35-37 as cited in Safe Work Australia summaries) and each jurisdiction's equivalent. The pack asks the caller whether the criteria are met and does not check them.
@@ -40,3 +38,11 @@ Primary-source note: AUSTRAC and Safe Work Australia pages were read in a browse
 - Duties of PCBUs at a shared workplace to notify each other; who counts as a "worker" for suicide and extended absence notifications.
 - Regulator notification channels beyond phone numbers (online forms), and phone numbers should be re-checked before verification.
 - Record-keeping and preservation duties beyond the construction records obligation listed.
+
+## Found in the 2026-11-23 desk review (see REVIEW.md)
+- WHS: every rule has `effective_from: 2020-01-01`, which is a placeholder, not a commencement date. The model provisions commenced earlier in most jurisdictions and later in WA (WHS Act 2020 (WA)). Replace with each jurisdiction's real commencement date; this matters for `as_of` queries before the true date.
+- WHS: the pack trusts the caller's `serious_injury_criteria_met` and `serious_risk_exposed`. The statutory lists (model Act ss 36-37) have now been read and can be encoded as structured inputs, so the API checks them instead of the caller.
+- WHS: rule `december-2025-amendments-not-yet-law` is wrong for the ACT, where key incident notification changes commenced on 19 November 2025 and sexual assault has been notifiable since 9 June 2023. Check what each jurisdiction has adopted (NSW and QLD were still considering the changes; check every jurisdiction).
+- WHS: regulator phone numbers other than the ACT's still come from Safe Work Australia's directory only. Check each against the regulator's own page. Safe Work Australia's directory and WorkSafe ACT's own page disagreed for the ACT.
+- WHS: the 48 hour written-notice rule and the 5 year record rule were read in the December 2025 model text. Confirm each jurisdiction's in-force Act has the same wording.
+- Real estate: `ongoing-cdd` and `foreign-person-risk-factor` are still unread and not applied.

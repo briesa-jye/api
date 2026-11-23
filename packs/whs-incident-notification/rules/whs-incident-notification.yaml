@@ -1,7 +1,7 @@
 - id: notifiable-incident
-  version: 1.0.0
+  version: 1.1.0
   title: "Notifiable incident: notify the WHS regulator immediately and preserve the site"
-  description: "A death, a serious injury or illness, or a dangerous incident that exposes someone to a serious risk, arising from work, is a notifiable incident. The duty holder must notify the regulator immediately after becoming aware and preserve the incident site."
+  description: "The death of any person (a worker, customer or member of the public), a serious injury or illness of any person, or a dangerous incident that exposes a person to a serious risk, arising out of the conduct of the business or undertaking, is a notifiable incident. The business (PCBU) must notify the regulator immediately after becoming aware. Whoever has management or control of the workplace must preserve the site."
   jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
   when: &notifiable { any: [
         { all: [ { path: incident_type, op: eq, value: death }, { path: arose_from_work, op: eq, value: true } ] },
@@ -12,7 +12,7 @@
     escalate: true
     required_actions:
       - { id: notify-regulator-immediately, description: "Notify the WHS regulator immediately after becoming aware of the incident. A person in the business, not this API, makes the notification." }
-      - { id: preserve-incident-site, description: "Preserve the incident site until an inspector arrives or directs otherwise. This does not prevent helping an injured person, removing a deceased person, making the site safe or assisting a police investigation." }
+      - { id: preserve-incident-site, description: "If you have management or control of the workplace, preserve the incident site until an inspector arrives or directs otherwise (the December 2025 model text says until released by an inspector). This does not prevent helping an injured person, removing a deceased person, making the site safe or assisting a police investigation." }
       - { id: call-000-if-immediate-risk, description: "Call 000 if there is an immediate risk to life." }
     reason: The reported facts match a notifiable incident category.
   source: { instrument: "Model WHS Act Part 3 (Safe Work Australia: Incident reporting, construction duties information)", url: "https://www.safeworkaustralia.gov.au/duties-tool/construction/duties-information/incident-reporting", retrieved: "2026-11-22" }
@@ -111,6 +111,21 @@
   effective_from: "2020-01-01"
   status: active
 
+- id: act-sexual-assault-notifiable
+  version: 1.0.0
+  title: "ACT: workplace sexual assault is a notifiable incident"
+  description: "In the ACT, a workplace sexual assault incident, including a suspected incident, has been notifiable since 9 June 2023. It is notified through WorkSafe ACT's sexual assault incident notification form. Whether other violent incidents are notifiable in the ACT is not encoded."
+  jurisdictions: [ACT]
+  when: { all: [ { path: incident_type, op: eq, value: violent_incident }, { path: arose_from_work, op: eq, value: true } ] }
+  then:
+    outcome: needs_information
+    escalate: true
+    required_actions: [{ id: act-check-sexual-assault-notification, description: "If the incident is or may be a sexual assault, notify WorkSafe ACT using its Sexual Assault Incident Notification Form. Anyone who experienced or witnessed a sexual assault can also contact ACT Policing on 131 444 (000 in an emergency)." }]
+    reason: In the ACT, workplace sexual assault incidents are notifiable. This pack cannot tell from the incident type whether the incident was a sexual assault.
+  source: { instrument: "WorkSafe ACT: Sexual Assault is now a notifiable incident in the ACT", url: "https://www.worksafe.act.gov.au/about-worksafe-act/news-and-media/sexual-assault-is-now-a-notifiable-incident-in-the-act", retrieved: "2026-11-23" }
+  effective_from: "2023-06-09"
+  status: active
+
 - id: victoria-not-encoded
   version: 1.0.0
   title: "Victoria: requirements not encoded in this pack"
@@ -171,13 +186,13 @@
   status: active
 
 - id: regulator-act
-  version: 1.0.0
+  version: 1.1.0
   title: "Notify WorkSafe ACT"
-  description: "Where an incident is notifiable in ACT, notifications go directly to WorkSafe ACT."
+  description: "Where an incident is notifiable in the ACT, notifications go directly to WorkSafe ACT. WorkSafe ACT prefers a phone call first; an online form is also available."
   jurisdictions: [ACT]
   when: *notifiable
-  then: { required_actions: [{ id: notify-worksafe-act, description: "Notify WorkSafe ACT on 02 6207 1923 (worksafe.act.gov.au)." }] }
-  source: { instrument: "Safe Work Australia: Incident notification - Reporting an incident", section: "regulator contact details", url: "https://www.safeworkaustralia.gov.au/safety-topic/managing-health-and-safety/incident-notification/reporting-incident", retrieved: "2026-11-22" }
+  then: { required_actions: [{ id: notify-worksafe-act, description: "Notify WorkSafe ACT by phone on 13 22 81 (business hours) or 0419 120 028 (after hours), or through the online form at worksafe.act.gov.au. Workplace sexual assault incidents use WorkSafe ACT's separate sexual assault notification form." }] }
+  source: { instrument: "WorkSafe ACT: Notify WorkSafe ACT (regulator's own page)", url: "https://www.worksafe.act.gov.au/health-and-safety-portal/notify-worksafe", retrieved: "2026-11-23" }
   effective_from: "2020-01-01"
   status: active
 
@@ -204,11 +219,12 @@
   status: active
 
 - id: written-notice-followup
-  version: 1.0.0
-  title: Written notice of the incident may be required after the immediate notification (unverified)
-  description: Model WHS laws are understood to allow the regulator to require written notice. The timeframe and wording have not been read from a primary source for this pack.
+  version: 1.1.0
+  title: "Written notice within 48 hours if the regulator requires it"
+  description: "A notice given by telephone may need to be followed by written notice. If the regulator requires it, written notice must be given within 48 hours of that requirement. The model Act text read is the December 2025 version; the same 48 hour period is confirmed in force in the ACT. Other jurisdictions' in-force Acts have not been checked."
   jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
   when: *notifiable
-  then: { required_actions: [{ id: written-notice-if-requested, description: Be ready to provide written notice if the regulator requests it. }] }
+  then: { required_actions: [{ id: written-notice-if-requested, description: "If you notify by telephone and the regulator asks for written notice, give it within 48 hours of the request, in the form the regulator approves." }] }
+  source: { instrument: "Model WHS Act s 38(4)(b), December 2025 version (Safe Work Australia); WorkSafe ACT: Notify WorkSafe ACT", section: "written notice within 48 hours of the regulator's requirement", url: "https://www.safeworkaustralia.gov.au/sites/default/files/2025-12/model-whs-bill-5_december_2025.pdf", retrieved: "2026-11-23" }
   effective_from: "2020-01-01"
-  status: needs_review
+  status: active

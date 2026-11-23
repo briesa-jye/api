@@ -9,7 +9,7 @@
   status: active
 - id: preserve-incident-site
   title: Preserve the incident site
-  description: Preserve the site until an inspector arrives or directs otherwise. This does not prevent helping an injured person, removing a deceased person, making the site safe or assisting a police investigation.
+  description: The person with management or control of the workplace must preserve the site until an inspector arrives or directs otherwise (the December 2025 model text says until released by an inspector), so far as reasonably practicable. This does not prevent helping an injured person, removing a deceased person, making the site safe or assisting a police investigation.
   applies_to: [pcbu]
   jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
   deadline: Until an inspector arrives or directs otherwise
@@ -23,5 +23,14 @@
   jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
   deadline: 2 years after the incident
   source: { instrument: "Model WHS Regulations Part 11.3 (Safe Work Australia: Incident reporting, construction duties information)", url: "https://www.safeworkaustralia.gov.au/duties-tool/construction/duties-information/incident-reporting", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active
+- id: keep-incident-record
+  title: Keep a record of each notifiable incident for at least 5 years
+  description: A person conducting a business or undertaking must keep a record of each notifiable incident for at least 5 years from the day notice is given to the regulator.
+  applies_to: [pcbu]
+  jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
+  deadline: At least 5 years from the day notice is given to the regulator
+  source: { instrument: "Model WHS Act s 38(7), December 2025 version (Safe Work Australia)", url: "https://www.safeworkaustralia.gov.au/sites/default/files/2025-12/model-whs-bill-5_december_2025.pdf", retrieved: "2026-11-23" }
   effective_from: "2020-01-01"
   status: active

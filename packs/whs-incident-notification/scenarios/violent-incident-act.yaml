@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). ACT: workplace sexual assault has been notifiable since 2023-06-09, but the incident type alone cannot confirm it.
+id: violent-incident-act
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: ACT
+as_of: "2026-11-23"
+inputs: {"incident_type": "violent_incident", "arose_from_work": true}
+expect: {"outcome": "needs_information", "escalation_recommended": true, "action_ids": ["act-check-sexual-assault-notification", "confirm-local-adoption-with-regulator"], "reason_rule_ids": ["act-sexual-assault-notifiable", "december-2025-amendments-not-yet-law"], "missing_paths": []}

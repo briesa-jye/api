@@ -5,4 +5,4 @@ scenario_type: classify_incident
 jurisdiction: NSW
 as_of: "2026-11-22"
 inputs: {"incident_type": "death", "arose_from_work": true}
-expect: {"outcome": "notifiable", "escalation_recommended": true, "action_ids": ["notify-regulator-immediately", "preserve-incident-site", "call-000-if-immediate-risk", "notify-safework-nsw"], "reason_rule_ids": ["notifiable-incident", "regulator-nsw"], "missing_paths": []}
+expect: {"outcome": "notifiable", "escalation_recommended": true, "action_ids": ["notify-regulator-immediately", "preserve-incident-site", "call-000-if-immediate-risk", "notify-safework-nsw", "written-notice-if-requested"], "reason_rule_ids": ["notifiable-incident", "regulator-nsw", "written-notice-followup"], "missing_paths": []}

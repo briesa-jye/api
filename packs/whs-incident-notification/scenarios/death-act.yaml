@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). A work-related death in the ACT: the regulator contact comes from WorkSafe ACT's own page.
+id: death-act
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: ACT
+as_of: "2026-11-23"
+inputs: {"incident_type": "death", "arose_from_work": true}
+expect: {"outcome": "notifiable", "escalation_recommended": true, "action_ids": ["notify-regulator-immediately", "preserve-incident-site", "call-000-if-immediate-risk", "notify-worksafe-act", "written-notice-if-requested"], "reason_rule_ids": ["notifiable-incident", "regulator-act", "written-notice-followup"], "missing_paths": []}

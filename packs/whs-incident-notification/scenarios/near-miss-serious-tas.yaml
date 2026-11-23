@@ -5,4 +5,4 @@ scenario_type: classify_incident
 jurisdiction: TAS
 as_of: "2026-11-22"
 inputs: {"incident_type": "dangerous_incident", "arose_from_work": true, "serious_risk_exposed": "yes"}
-expect: {"outcome": "notifiable", "escalation_recommended": true, "action_ids": ["notify-regulator-immediately", "preserve-incident-site", "call-000-if-immediate-risk", "notify-worksafe-tasmania"], "reason_rule_ids": ["notifiable-incident", "regulator-tas"]}
+expect: {"outcome": "notifiable", "escalation_recommended": true, "action_ids": ["notify-regulator-immediately", "preserve-incident-site", "call-000-if-immediate-risk", "notify-worksafe-tasmania", "written-notice-if-requested"], "reason_rule_ids": ["notifiable-incident", "regulator-tas", "written-notice-followup"]}
