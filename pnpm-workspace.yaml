@@ -7,3 +7,8 @@ allowBuilds:
   "@prisma/engines": true
   prisma: true
   esbuild: true
+# Patched transitive versions for advisories that the direct dependencies have not yet picked up.
+overrides:
+  effect: "^3.22.1"
+  deepmerge-ts: "^8.0.0"
+  postcss-selector-parser: "^6.1.5"
