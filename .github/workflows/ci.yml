@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: corepack enable
+      - run: corepack pnpm install --frozen-lockfile
+      - name: Typecheck
+        run: corepack pnpm typecheck
+      - name: Tests
+        run: corepack pnpm test
+      - name: Validate every pack
+        run: |
+          for dir in packs/*/; do
+            corepack pnpm pack:validate "$(basename "$dir")"
+          done
+      - name: Committed docs match the code
+        run: |
+          corepack pnpm docs:generate
+          git diff --exit-code docs/
+      - name: Dependency audit (fail on high or critical)
+        run: corepack pnpm audit --audit-level=high
+      - name: Build the website
+        run: corepack pnpm --filter @briesa/web exec next build

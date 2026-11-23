@@ -84,7 +84,13 @@ Every error has the same shape:
 { "error": { "type": "invalid_request_error", "code": "invalid_inputs", "message": "...", "request_id": "req_..." } }
 ```
 
-Quote `request_id` when contacting support. `429` responses include `Retry-After`. Retrying a `POST` with the same `Idempotency-Key` and body returns the original response (`Idempotent-Replayed: true`); the same key with a different body is a `409`.
+Quote `request_id` when contacting support. `429` responses include `Retry-After`. Retrying a `POST` with the same `Idempotency-Key` and body returns the original response (`Idempotent-Replayed: true`); the same key with a different body is a `409` (`idempotency_key_reused`). If the first request with that key is still running, a retry gets `409 request_in_progress` with `Retry-After: 1`; wait and retry. A `5xx` releases the key, so retrying after a server error runs the request again.
+
+## Dates, references and the audit trail
+
+- `as_of` (`YYYY-MM-DD`, optional) on `POST /v1/assess` answers "what did the rules say on this date?" using each rule's effective dates. The response echoes `as_of`. It uses the pack version currently deployed, so for a date before a rule existed you get that rule's absence, not an earlier wording; the audit record keeps the exact rule versions used.
+- `reference` (optional, up to 200 characters) is your own identifier for the assessment. It is stored in the audit record and returned. Use an internal id, never personal information.
+- `GET /v1/audit` lists audit records newest first (`limit` 1 to 100, `starting_after` cursor from `next_cursor`, filters `pack`, `reference`, `test`).
 
 ## 5. Get notified when rules change
 

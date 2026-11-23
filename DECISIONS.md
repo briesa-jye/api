@@ -76,3 +76,11 @@ Defaults chosen by the build, as agreed with Jye. Change any of these before pro
 ## Phase 1 limitations
 - Superseded in phase 5: a `PrismaStore` and migrations now exist (see above).
 - Superseded in phase 5: `pnpm tenant:create` provisions tenants.
+
+## Hardening batch
+- Idempotency keys are claimed atomically (a `status: 0` row) before the handler runs, so concurrent identical requests run once; a claim with no result for 60 s is treated as abandoned. This needs no schema change and works across API instances because the unique constraint on (tenant, key) is the lock.
+- `as_of` evaluates rules by effective date against the currently deployed pack version. It is not a full historical replay of old rule wording; the audit record keeps the exact rule versions used for each call. Future dates are allowed (planning).
+- `reference` is caller-supplied, stored in the immutable audit record (migration 0005), and documented as never containing personal information. It is not validated beyond length.
+- Audit listing uses a keyset cursor on (createdAt, requestId) descending, so pages are stable while new records arrive.
+- Transitive advisories are fixed with `pnpm` overrides constrained to the same major version the parent expects (effect 3.x, deepmerge-ts 8.x, postcss-selector-parser 6.x) and by moving vitest to 4.x. Revisit the overrides when Prisma and Tailwind's typography plugin release versions that no longer need them.
+- CI runs typecheck, tests, validation of every pack, a check that committed docs are regenerated, `pnpm audit --audit-level=high`, and the web build.
