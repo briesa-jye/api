@@ -35,18 +35,22 @@
   status: active
 - id: enrol-with-austrac
   title: Enrol with AUSTRAC
-  description: Enrolment is required for businesses that provide table 6 designated services. The enrolment deadline (29 July 2026) comes from a search-result summary of AUSTRAC pages and has not been read on the page itself.
+  description: A business newly regulated under the AML/CTF laws (including real estate professionals providing a table 6 designated service) must enrol with AUSTRAC. AUSTRAC stated the enrolment deadline as 29 July 2026; a business that provides a designated service and has not enrolled should enrol now.
   applies_to: [real_estate_professional]
   jurisdictions: [AU]
+  deadline: 29 July 2026 for newly regulated businesses
+  source: { instrument: "AUSTRAC: Enrol now and meet your obligations (published 30 June 2026); AUSTRAC: New reporting regime now in force (1 July 2026)", url: "https://www.austrac.gov.au/news-and-media/article/enrol-now-and-meet-your-obligations", retrieved: "2026-11-23" }
   effective_from: "2026-07-01"
-  status: needs_review
+  status: active
 - id: aml-ctf-program-and-compliance-officer
   title: Have an AML/CTF program and an AML/CTF compliance officer
-  description: Reported in AUSTRAC summaries as required from 1 July 2026. Not read on a primary page for this pack.
+  description: From 1 July 2026 a newly regulated business must have developed and maintain an AML/CTF program that identifies and manages its risks, appoint an AML/CTF compliance officer, train its staff and be ready to identify and report suspicious activity. What the program must contain is not encoded in this pack.
   applies_to: [real_estate_professional]
   jurisdictions: [AU]
+  deadline: From 1 July 2026
+  source: { instrument: "AUSTRAC: Enrol now and meet your obligations (published 30 June 2026)", section: "Your obligations start 1 July", url: "https://www.austrac.gov.au/news-and-media/article/enrol-now-and-meet-your-obligations", retrieved: "2026-11-23" }
   effective_from: "2026-07-01"
-  status: needs_review
+  status: active
 - id: ongoing-cdd
   title: Apply ongoing customer due diligence
   description: AUSTRAC publishes ongoing CDD guidance that this pack has not yet read or encoded.
