@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). Victoria is not encoded, whatever the categories.
+id: dangerous-no-category-vic
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: VIC
+as_of: "2026-11-23"
+inputs: {"incident_type":"dangerous_incident","arose_from_work":true,"dangerous_incident_categories":["none_of_these"],"serious_risk_exposed":"yes"}
+expect: {"outcome": "needs_information", "escalation_recommended": true, "action_ids": ["contact-worksafe-victoria"], "reason_rule_ids": ["victoria-not-encoded"], "missing_paths": []}

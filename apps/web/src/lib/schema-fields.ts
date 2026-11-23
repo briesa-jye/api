@@ -4,14 +4,14 @@ export interface Field {
   path: string;
   label: string;
   group: string;
-  kind: "enum" | "boolean" | "integer" | "number" | "string";
+  kind: "enum" | "multi" | "boolean" | "integer" | "number" | "string";
   options?: string[];
   required: boolean;
   description?: string;
   min?: number;
 }
 
-type Schema = { type?: string; properties?: Record<string, Schema>; required?: string[]; enum?: unknown[]; description?: string; minimum?: number };
+type Schema = { type?: string; items?: { enum?: unknown[] }; properties?: Record<string, Schema>; required?: string[]; enum?: unknown[]; description?: string; minimum?: number };
 
 const humanize = (k: string) => { const s = k.replace(/_/g, " "); return s[0]!.toUpperCase() + s.slice(1); };
 
@@ -24,7 +24,8 @@ export function flattenSchema(schema: unknown, prefix = "", parentRequired = tru
     const required = parentRequired && req.has(key);
     if (prop.type === "object") { out.push(...flattenSchema(prop, path, required)); continue; }
     const base = { path, label: humanize(key), group: prefix, required, description: prop.description };
-    if (Array.isArray(prop.enum)) out.push({ ...base, kind: "enum", options: prop.enum.map(String) });
+    if (prop.type === "array" && Array.isArray(prop.items?.enum)) out.push({ ...base, kind: "multi", options: prop.items.enum.map(String) });
+    else if (Array.isArray(prop.enum)) out.push({ ...base, kind: "enum", options: prop.enum.map(String) });
     else if (prop.type === "boolean") out.push({ ...base, kind: "boolean" });
     else if (prop.type === "integer" || prop.type === "number") out.push({ ...base, kind: prop.type, min: prop.minimum });
     else out.push({ ...base, kind: "string" });
@@ -46,6 +47,7 @@ export function buildInputs(fields: Field[], values: Record<string, string>): Re
     const raw = values[f.path];
     if (raw === undefined || raw === "") continue;
     if (f.kind === "boolean") setPath(out, f.path, raw === "true");
+    else if (f.kind === "multi") setPath(out, f.path, raw.split(",").filter(Boolean)); // checkboxes are held as a comma-separated string
     else if (f.kind === "integer" || f.kind === "number") { const n = Number(raw); setPath(out, f.path, Number.isFinite(n) ? n : raw); }
     else setPath(out, f.path, raw);
   }
@@ -58,7 +60,8 @@ export function toFormValues(fields: Field[], inputs: Record<string, unknown>): 
   for (const f of fields) {
     let cur: unknown = inputs;
     for (const p of f.path.split(".")) cur = cur && typeof cur === "object" ? (cur as Record<string, unknown>)[p] : undefined;
-    if (cur !== undefined && cur !== null) out[f.path] = String(cur);
+    if (Array.isArray(cur)) out[f.path] = cur.join(",");
+    else if (cur !== undefined && cur !== null) out[f.path] = String(cur);
   }
   return out;
 }

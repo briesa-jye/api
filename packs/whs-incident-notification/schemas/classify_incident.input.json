@@ -2,14 +2,91 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "additionalProperties": false,
-  "required": ["incident_type", "arose_from_work"],
+  "required": [
+    "incident_type",
+    "arose_from_work"
+  ],
   "properties": {
     "incident_type": {
-      "enum": ["death", "injury_or_illness", "dangerous_incident", "violent_incident", "suicide_or_attempt", "extended_absence", "other"],
+      "enum": [
+        "death",
+        "injury_or_illness",
+        "dangerous_incident",
+        "violent_incident",
+        "suicide_or_attempt",
+        "extended_absence",
+        "other"
+      ],
       "description": "Category of the incident as described by the caller. violent_incident, suicide_or_attempt and extended_absence relate to the December 2025 model amendments, which apply only where adopted locally."
     },
-    "arose_from_work": { "type": "boolean", "description": "The incident happened as a result of work (arising from the conduct of the business or undertaking)." },
-    "serious_injury_criteria_met": { "enum": ["yes", "no", "unknown"], "description": "For injury_or_illness: the caller has checked the injury or illness against the statutory serious injury or illness criteria for the jurisdiction. This pack does not encode the criteria." },
-    "serious_risk_exposed": { "enum": ["yes", "no", "unknown"], "description": "For dangerous_incident: the incident exposed a person to a serious risk to health or safety, checked against the statutory dangerous incident criteria. This pack does not encode the criteria." }
+    "arose_from_work": {
+      "type": "boolean",
+      "description": "The incident happened as a result of work (arising from the conduct of the business or undertaking)."
+    },
+    "serious_injury_criteria_met": {
+      "enum": [
+        "yes",
+        "no",
+        "unknown"
+      ],
+      "description": "For injury_or_illness: the caller has checked the injury or illness against the statutory serious injury or illness criteria. Prefer injury_categories, which the API checks for you; this field is used only when injury_categories is absent."
+    },
+    "serious_risk_exposed": {
+      "enum": [
+        "yes",
+        "no",
+        "unknown"
+      ],
+      "description": "For dangerous_incident: the incident immediately or imminently exposed a person to a serious risk to health or safety. Required for the incident to be notifiable, together with a category (dangerous_incident_categories)."
+    },
+    "injury_categories": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "inpatient_treatment",
+          "amputation",
+          "serious_head_injury",
+          "serious_eye_injury",
+          "serious_burn",
+          "skin_separation",
+          "spinal_injury",
+          "loss_of_bodily_function",
+          "serious_laceration",
+          "substance_exposure_treated_within_48h",
+          "pelvis_skull_or_facial_fracture",
+          "other_serious_fracture",
+          "serious_crush_injury",
+          "serious_brain_injury_from_blows",
+          "none_of_these"
+        ]
+      },
+      "description": "For injury_or_illness: which statutory serious injury or illness categories apply (model WHS Act s 36). A category applies if the injury or illness would ordinarily require the immediate treatment described, whether or not treatment is available or sought. Send [\"none_of_these\"] if none apply. pelvis_skull_or_facial_fracture, other_serious_fracture, serious_crush_injury and serious_brain_injury_from_blows were added by the December 2025 model amendments and apply only where adopted locally. When present, this takes precedence over serious_injury_criteria_met."
+    },
+    "dangerous_incident_categories": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "uncontrolled_substance_release",
+          "uncontrolled_fire_or_explosion",
+          "uncontrolled_gas_or_steam_escape",
+          "uncontrolled_pressurised_substance_escape",
+          "electric_shock",
+          "fall_or_release_from_height_of_a_thing",
+          "authorised_plant_failure",
+          "structure_collapse",
+          "excavation_or_shoring_collapse",
+          "underground_inrush",
+          "underground_ventilation_interruption",
+          "mobile_plant_incident",
+          "serious_fall_of_a_person",
+          "none_of_these"
+        ]
+      },
+      "description": "For dangerous_incident: which statutory dangerous incident categories apply (model WHS Act s 37). Also set serious_risk_exposed: a category is notifiable only if it immediately or imminently exposes a person to a serious risk. mobile_plant_incident and serious_fall_of_a_person were added by the December 2025 model amendments and apply only where adopted locally. Send [\"none_of_these\"] if none apply."
+    }
   }
 }

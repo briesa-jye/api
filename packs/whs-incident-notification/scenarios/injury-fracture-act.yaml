@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). Serious fracture: a December 2025 category, in force in the ACT.
+id: injury-fracture-act
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: ACT
+as_of: "2026-11-23"
+inputs: {"incident_type":"injury_or_illness","arose_from_work":true,"injury_categories":["other_serious_fracture"]}
+expect: {"outcome": "notifiable", "escalation_recommended": true, "action_ids": ["notify-regulator-immediately","preserve-incident-site","call-000-if-immediate-risk","notify-worksafe-act","written-notice-if-requested"], "reason_rule_ids": ["notifiable-incident-act-amended","regulator-act","written-notice-followup-act-amended"], "missing_paths": []}

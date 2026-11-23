@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). Caller states no statutory category applies.
+id: injury-no-category-wa
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: WA
+as_of: "2026-11-23"
+inputs: {"incident_type":"injury_or_illness","arose_from_work":true,"injury_categories":["none_of_these"]}
+expect: {"outcome": "not_notifiable", "escalation_recommended": false, "action_ids": [], "reason_rule_ids": ["injury-no-listed-category"], "missing_paths": []}

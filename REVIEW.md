@@ -22,7 +22,7 @@ Corrected:
 
 Not fixed, needs a decision or a human (also in RULES_TO_VERIFY.md):
 1. `effective_from: 2020-01-01` is a placeholder on every rule.
-2. The caller, not the API, decides whether serious-injury and dangerous-incident criteria are met. The statutory lists are now known and could be encoded. This is the biggest improvement available.
+2. (Done in 0.3.0, below.) The caller decided whether serious-injury and dangerous-incident criteria were met.
 3. Rule `december-2025-amendments-not-yet-law` is wrong for the ACT. Other jurisdictions' adoption is unconfirmed (search results suggest NSW was still considering them and QLD had a violent-incidents bill before Parliament; unverified).
 4. Other regulators' phone numbers are unchecked against their own pages.
 5. Victoria and Commonwealth are still not encoded.
@@ -43,3 +43,12 @@ Promoted from needs-review (now active, sourced):
 Still needs review: `ongoing-cdd`, and the `foreign-person-risk-factor` rule (no source says foreign-person status changes CDD).
 
 Not covered: the AML/CTF Act and Rules text itself (only AUSTRAC's guidance was read), table 6 item 3, simplified CDD, delayed CDD, threshold transaction reports, third-party reliance.
+
+## whs-incident-notification 0.3.0: statutory categories encoded
+
+- New optional inputs `injury_categories` (model Act s 36) and `dangerous_incident_categories` (s 37). The API now checks the caller's selection against the statutory lists instead of trusting a yes/no. The old `serious_injury_criteria_met` still works when the new field is absent.
+- Categories added in December 2025 (pelvis, skull and facial fractures, other serious fractures, serious crush injuries, serious brain injuries from blows, mobile plant incidents, serious falls) are **notifiable in the ACT** (in force 19 November 2025) and return **needs_information** elsewhere, so the API never reports "not notifiable" for them where adoption is unconfirmed.
+- `none_of_these` returns not_notifiable only on the caller's say-so, and the reason tells them to check for injuries or incidents prescribed by their jurisdiction's regulations.
+- **Bug found and fixed:** an injury with no criteria supplied, or a dangerous incident with no `serious_risk_exposed`, silently defaulted to **not_notifiable**. Both now return needs_information.
+- The website playground now renders multi-select fields (it only supported single values).
+- 10 new scenarios (22 in total).

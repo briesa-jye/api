@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). Electric shock exposing a person to serious risk.
+id: dangerous-electric-shock-qld
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: QLD
+as_of: "2026-11-23"
+inputs: {"incident_type":"dangerous_incident","arose_from_work":true,"dangerous_incident_categories":["electric_shock"],"serious_risk_exposed":"yes"}
+expect: {"outcome": "notifiable", "escalation_recommended": true, "action_ids": ["notify-regulator-immediately","preserve-incident-site","call-000-if-immediate-risk","notify-worksafe-queensland","written-notice-if-requested"], "reason_rule_ids": ["notifiable-incident","regulator-qld","written-notice-followup"], "missing_paths": []}

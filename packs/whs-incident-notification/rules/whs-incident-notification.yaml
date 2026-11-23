@@ -1,12 +1,14 @@
 - id: notifiable-incident
-  version: 1.1.0
+  version: 1.2.0
   title: "Notifiable incident: notify the WHS regulator immediately and preserve the site"
   description: "The death of any person (a worker, customer or member of the public), a serious injury or illness of any person, or a dangerous incident that exposes a person to a serious risk, arising out of the conduct of the business or undertaking, is a notifiable incident. The business (PCBU) must notify the regulator immediately after becoming aware. Whoever has management or control of the workplace must preserve the site."
   jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
   when: &notifiable { any: [
         { all: [ { path: incident_type, op: eq, value: death }, { path: arose_from_work, op: eq, value: true } ] },
         { all: [ { path: incident_type, op: eq, value: injury_or_illness }, { path: arose_from_work, op: eq, value: true }, { path: serious_injury_criteria_met, op: eq, value: 'yes' } ] },
-        { all: [ { path: incident_type, op: eq, value: dangerous_incident }, { path: arose_from_work, op: eq, value: true }, { path: serious_risk_exposed, op: eq, value: 'yes' } ] } ] }
+        { all: [ { path: incident_type, op: eq, value: injury_or_illness }, { path: arose_from_work, op: eq, value: true }, { any: [ { path: injury_categories, op: contains, value: inpatient_treatment }, { path: injury_categories, op: contains, value: amputation }, { path: injury_categories, op: contains, value: serious_head_injury }, { path: injury_categories, op: contains, value: serious_eye_injury }, { path: injury_categories, op: contains, value: serious_burn }, { path: injury_categories, op: contains, value: skin_separation }, { path: injury_categories, op: contains, value: spinal_injury }, { path: injury_categories, op: contains, value: loss_of_bodily_function }, { path: injury_categories, op: contains, value: serious_laceration }, { path: injury_categories, op: contains, value: substance_exposure_treated_within_48h } ] } ] },
+        { all: [ { path: incident_type, op: eq, value: dangerous_incident }, { path: arose_from_work, op: eq, value: true }, { path: serious_risk_exposed, op: eq, value: 'yes' }, { path: dangerous_incident_categories, op: missing } ] },
+        { all: [ { path: incident_type, op: eq, value: dangerous_incident }, { path: arose_from_work, op: eq, value: true }, { path: serious_risk_exposed, op: eq, value: 'yes' }, { any: [ { path: dangerous_incident_categories, op: contains, value: uncontrolled_substance_release }, { path: dangerous_incident_categories, op: contains, value: uncontrolled_fire_or_explosion }, { path: dangerous_incident_categories, op: contains, value: uncontrolled_gas_or_steam_escape }, { path: dangerous_incident_categories, op: contains, value: uncontrolled_pressurised_substance_escape }, { path: dangerous_incident_categories, op: contains, value: electric_shock }, { path: dangerous_incident_categories, op: contains, value: fall_or_release_from_height_of_a_thing }, { path: dangerous_incident_categories, op: contains, value: authorised_plant_failure }, { path: dangerous_incident_categories, op: contains, value: structure_collapse }, { path: dangerous_incident_categories, op: contains, value: excavation_or_shoring_collapse }, { path: dangerous_incident_categories, op: contains, value: underground_inrush }, { path: dangerous_incident_categories, op: contains, value: underground_ventilation_interruption } ] } ] } ] }
   then: 
     outcome: notifiable
     escalate: true
@@ -16,6 +18,95 @@
       - { id: call-000-if-immediate-risk, description: "Call 000 if there is an immediate risk to life." }
     reason: The reported facts match a notifiable incident category.
   source: { instrument: "Model WHS Act Part 3 (Safe Work Australia: Incident reporting, construction duties information)", url: "https://www.safeworkaustralia.gov.au/duties-tool/construction/duties-information/incident-reporting", retrieved: "2026-11-22" }
+  effective_from: "2020-01-01"
+  status: active
+
+- id: notifiable-incident-act-amended
+  version: 1.0.0
+  title: "ACT: serious injury or dangerous incident in a category added by the December 2025 amendments"
+  description: "In the ACT the incident notification amendments commenced on 19 November 2025. Serious fractures of the pelvis, skull or facial bones, other serious bone fractures, serious crush injuries and serious brain injuries from blows or knocks, and mobile plant incidents and serious falls that expose a person to a serious risk, are notifiable."
+  jurisdictions: [ACT]
+  when: &notifiable_act_extra { any: [
+        { all: [ { path: incident_type, op: eq, value: injury_or_illness }, { path: arose_from_work, op: eq, value: true }, { any: [ { path: injury_categories, op: contains, value: pelvis_skull_or_facial_fracture }, { path: injury_categories, op: contains, value: other_serious_fracture }, { path: injury_categories, op: contains, value: serious_crush_injury }, { path: injury_categories, op: contains, value: serious_brain_injury_from_blows } ] } ] },
+        { all: [ { path: incident_type, op: eq, value: dangerous_incident }, { path: arose_from_work, op: eq, value: true }, { path: serious_risk_exposed, op: eq, value: 'yes' }, { any: [ { path: dangerous_incident_categories, op: contains, value: mobile_plant_incident }, { path: dangerous_incident_categories, op: contains, value: serious_fall_of_a_person } ] } ] } ] }
+  then:
+    outcome: notifiable
+    escalate: true
+    required_actions:
+      - { id: notify-regulator-immediately, description: "Notify the WHS regulator immediately after becoming aware of the incident. A person in the business, not this API, makes the notification." }
+      - { id: preserve-incident-site, description: "If you have management or control of the workplace, preserve the incident site until an inspector arrives or directs otherwise. This does not prevent helping an injured person, removing a deceased person, making the site safe or assisting a police investigation." }
+      - { id: call-000-if-immediate-risk, description: "Call 000 if there is an immediate risk to life." }
+    reason: The reported facts match a category that became notifiable in the ACT on 19 November 2025.
+  source: { instrument: "WorkSafe ACT: Incident Notification amendments (changes commenced 19 November 2025); Model WHS Act ss 36-37, December 2025 version", url: "https://www.worksafe.act.gov.au/health-and-safety-portal/safety-alerts/incident-notification-amendments", retrieved: "2026-11-23" }
+  effective_from: "2025-11-19"
+  status: active
+
+- id: amended-category-check-adoption
+  version: 1.0.0
+  title: "Category added by the December 2025 amendments: check whether it applies in your jurisdiction"
+  description: "The reported injury or incident falls only in a category added by the December 2025 model amendments. Those categories are notifiable only where the jurisdiction has adopted them. Adoption by this jurisdiction has not been confirmed in this pack."
+  jurisdictions: [NSW, NT, QLD, SA, TAS, WA]
+  when: { all: [ { not: *notifiable }, { path: arose_from_work, op: eq, value: true }, { any: [
+        { all: [ { path: incident_type, op: eq, value: injury_or_illness }, { any: [ { path: injury_categories, op: contains, value: pelvis_skull_or_facial_fracture }, { path: injury_categories, op: contains, value: other_serious_fracture }, { path: injury_categories, op: contains, value: serious_crush_injury }, { path: injury_categories, op: contains, value: serious_brain_injury_from_blows } ] } ] },
+        { all: [ { path: incident_type, op: eq, value: dangerous_incident }, { path: serious_risk_exposed, op: eq, value: 'yes' }, { any: [ { path: dangerous_incident_categories, op: contains, value: mobile_plant_incident }, { path: dangerous_incident_categories, op: contains, value: serious_fall_of_a_person } ] } ] } ] } ] }
+  then:
+    outcome: needs_information
+    escalate: true
+    required_actions: [{ id: confirm-local-adoption-with-regulator, description: "Check with your WHS regulator whether the model amendments for this injury or incident category have been adopted locally and whether it must be notified. If in doubt, notify." }]
+    reason: Safe Work Australia says the amended notification duties take legal effect only once adopted into local WHS laws. This pack does not know the adoption status for this jurisdiction.
+  source: { instrument: "Model WHS Act ss 36-37 (Safe Work Australia, December 2025 version); explanatory memorandum to the incident notification amendments", url: "https://www.safeworkaustralia.gov.au/sites/default/files/2025-12/model-whs-bill-5_december_2025.pdf", retrieved: "2026-11-23" }
+  effective_from: "2025-12-05"
+  status: active
+
+- id: injury-no-listed-category
+  version: 1.0.0
+  title: "Injury or illness is in none of the statutory serious categories (as stated by the caller)"
+  description: "Only an injury or illness in a statutory serious category is notifiable. The regulations can prescribe further injuries or illnesses (s 36(1)(e)) and the regulator may be able to advise on borderline cases."
+  jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
+  when: { all: [ { path: incident_type, op: eq, value: injury_or_illness }, { path: arose_from_work, op: eq, value: true }, { path: injury_categories, op: contains, value: none_of_these } ] }
+  then: { outcome: not_notifiable, reason: "The caller states none of the statutory serious injury or illness categories apply. A qualified person should confirm, and check for any injury prescribed by the jurisdiction's regulations." }
+  source: { instrument: "Model WHS Act ss 36-37 (Safe Work Australia, December 2025 version); explanatory memorandum to the incident notification amendments", url: "https://www.safeworkaustralia.gov.au/sites/default/files/2025-12/model-whs-bill-5_december_2025.pdf", retrieved: "2026-11-23" }
+  effective_from: "2020-01-01"
+  status: active
+
+- id: dangerous-incident-no-listed-category
+  version: 1.0.0
+  title: "Dangerous incident is in none of the statutory categories (as stated by the caller)"
+  description: "Only an incident in a statutory dangerous incident category that exposes a person to a serious risk is notifiable. The regulations can prescribe further incidents (s 37(1)(n))."
+  jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
+  when: { all: [ { path: incident_type, op: eq, value: dangerous_incident }, { path: arose_from_work, op: eq, value: true }, { path: dangerous_incident_categories, op: contains, value: none_of_these } ] }
+  then: { outcome: not_notifiable, reason: "The caller states none of the statutory dangerous incident categories apply. A qualified person should confirm, and check for any incident prescribed by the jurisdiction's regulations." }
+  source: { instrument: "Model WHS Act ss 36-37 (Safe Work Australia, December 2025 version); explanatory memorandum to the incident notification amendments", url: "https://www.safeworkaustralia.gov.au/sites/default/files/2025-12/model-whs-bill-5_december_2025.pdf", retrieved: "2026-11-23" }
+  effective_from: "2020-01-01"
+  status: active
+
+- id: injury-details-missing
+  version: 1.0.0
+  title: "Injury or illness: no category or criteria supplied"
+  description: "Neither injury_categories nor serious_injury_criteria_met was supplied, so the injury cannot be classified."
+  jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
+  when: { all: [ { path: incident_type, op: eq, value: injury_or_illness }, { path: arose_from_work, op: eq, value: true }, { path: injury_categories, op: missing }, { path: serious_injury_criteria_met, op: missing } ] }
+  then:
+    outcome: needs_information
+    escalate: true
+    required_actions: [{ id: check-serious-injury-criteria, description: "Check the injury or illness against the serious injury or illness categories using your WHS regulator's guidance; if in doubt contact the regulator." }]
+    missing_information: [{ path: injury_categories, description: Which statutory serious injury or illness categories apply }]
+  source: { instrument: "Model WHS Act ss 36-37 (Safe Work Australia, December 2025 version); explanatory memorandum to the incident notification amendments", url: "https://www.safeworkaustralia.gov.au/sites/default/files/2025-12/model-whs-bill-5_december_2025.pdf", retrieved: "2026-11-23" }
+  effective_from: "2020-01-01"
+  status: active
+
+- id: dangerous-incident-details-missing
+  version: 1.0.0
+  title: "Dangerous incident: serious risk not stated"
+  description: "serious_risk_exposed was not supplied, so it cannot be decided whether the incident exposed anyone to a serious risk."
+  jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
+  when: { all: [ { path: incident_type, op: eq, value: dangerous_incident }, { path: arose_from_work, op: eq, value: true }, { path: serious_risk_exposed, op: missing } ] }
+  then:
+    outcome: needs_information
+    escalate: true
+    required_actions: [{ id: assess-dangerous-incident-criteria, description: "Assess the incident against the dangerous incident criteria using your WHS regulator's guidance; if in doubt contact the regulator." }]
+    missing_information: [{ path: serious_risk_exposed, description: Whether anyone was immediately or imminently exposed to a serious risk }]
+  source: { instrument: "Model WHS Act ss 36-37 (Safe Work Australia, December 2025 version); explanatory memorandum to the incident notification amendments", url: "https://www.safeworkaustralia.gov.au/sites/default/files/2025-12/model-whs-bill-5_december_2025.pdf", retrieved: "2026-11-23" }
   effective_from: "2020-01-01"
   status: active
 
@@ -31,22 +122,22 @@
   status: active
 
 - id: injury-criteria-not-met
-  version: 1.0.0
+  version: 1.1.0
   title: "Injury or illness does not meet the serious criteria (as stated by the caller)"
   description: "Only a serious injury or illness is notifiable."
   jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
-  when: { all: [ { path: incident_type, op: eq, value: injury_or_illness }, { path: arose_from_work, op: eq, value: true }, { path: serious_injury_criteria_met, op: eq, value: 'no' } ] }
+  when: { all: [ { path: incident_type, op: eq, value: injury_or_illness }, { path: arose_from_work, op: eq, value: true }, { path: serious_injury_criteria_met, op: eq, value: 'no' } , { path: injury_categories, op: missing }] }
   then: { outcome: not_notifiable, reason: "The caller states the serious injury or illness criteria are not met. This pack does not check the criteria." }
   source: { instrument: "Model WHS Act Part 3 (Safe Work Australia: Incident reporting, construction duties information)", url: "https://www.safeworkaustralia.gov.au/duties-tool/construction/duties-information/incident-reporting", retrieved: "2026-11-22" }
   effective_from: "2020-01-01"
   status: active
 
 - id: injury-criteria-unknown
-  version: 1.0.0
+  version: 1.1.0
   title: "Injury or illness: serious criteria not yet checked"
   description: "Whether the injury or illness is a notifiable serious injury or illness must be determined against the statutory criteria for the jurisdiction."
   jurisdictions: [ACT, NSW, NT, QLD, SA, TAS, WA]
-  when: { all: [ { path: incident_type, op: eq, value: injury_or_illness }, { path: arose_from_work, op: eq, value: true }, { path: serious_injury_criteria_met, op: eq, value: unknown } ] }
+  when: { all: [ { path: incident_type, op: eq, value: injury_or_illness }, { path: arose_from_work, op: eq, value: true }, { path: serious_injury_criteria_met, op: eq, value: unknown } , { path: injury_categories, op: missing }] }
   then: 
     outcome: needs_information
     escalate: true
@@ -186,11 +277,11 @@
   status: active
 
 - id: regulator-act
-  version: 1.1.0
+  version: 1.2.0
   title: "Notify WorkSafe ACT"
   description: "Where an incident is notifiable in the ACT, notifications go directly to WorkSafe ACT. WorkSafe ACT prefers a phone call first; an online form is also available."
   jurisdictions: [ACT]
-  when: *notifiable
+  when: { any: [ *notifiable, *notifiable_act_extra ] }
   then: { required_actions: [{ id: notify-worksafe-act, description: "Notify WorkSafe ACT by phone on 13 22 81 (business hours) or 0419 120 028 (after hours), or through the online form at worksafe.act.gov.au. Workplace sexual assault incidents use WorkSafe ACT's separate sexual assault notification form." }] }
   source: { instrument: "WorkSafe ACT: Notify WorkSafe ACT (regulator's own page)", url: "https://www.worksafe.act.gov.au/health-and-safety-portal/notify-worksafe", retrieved: "2026-11-23" }
   effective_from: "2020-01-01"
@@ -227,4 +318,15 @@
   then: { required_actions: [{ id: written-notice-if-requested, description: "If you notify by telephone and the regulator asks for written notice, give it within 48 hours of the request, in the form the regulator approves." }] }
   source: { instrument: "Model WHS Act s 38(4)(b), December 2025 version (Safe Work Australia); WorkSafe ACT: Notify WorkSafe ACT", section: "written notice within 48 hours of the regulator's requirement", url: "https://www.safeworkaustralia.gov.au/sites/default/files/2025-12/model-whs-bill-5_december_2025.pdf", retrieved: "2026-11-23" }
   effective_from: "2020-01-01"
+  status: active
+
+- id: written-notice-followup-act-amended
+  version: 1.0.0
+  title: "ACT: written notice within 48 hours if the regulator requires it (amended categories)"
+  description: "As for written-notice-followup, for incidents that are notifiable in the ACT because of the categories added in November 2025."
+  jurisdictions: [ACT]
+  when: *notifiable_act_extra
+  then: { required_actions: [{ id: written-notice-if-requested, description: "If you notify by telephone and WorkSafe ACT asks for written notice, give it within 48 hours of the request using its Notification of incident form." }] }
+  source: { instrument: "WorkSafe ACT: Notify WorkSafe ACT", url: "https://www.worksafe.act.gov.au/health-and-safety-portal/notify-worksafe", retrieved: "2026-11-23" }
+  effective_from: "2025-11-19"
   status: active

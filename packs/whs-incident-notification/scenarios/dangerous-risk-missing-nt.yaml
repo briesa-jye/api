@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). Category given but serious risk not stated: must not default to not notifiable.
+id: dangerous-risk-missing-nt
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: NT
+as_of: "2026-11-23"
+inputs: {"incident_type":"dangerous_incident","arose_from_work":true,"dangerous_incident_categories":["structure_collapse"]}
+expect: {"outcome": "needs_information", "escalation_recommended": true, "action_ids": ["assess-dangerous-incident-criteria"], "reason_rule_ids": ["dangerous-incident-details-missing"], "missing_paths": ["serious_risk_exposed"]}

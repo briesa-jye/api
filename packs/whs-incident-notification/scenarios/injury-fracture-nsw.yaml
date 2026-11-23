@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). Same fracture in NSW: adoption of the December 2025 categories is unconfirmed, so it is never reported as not notifiable.
+id: injury-fracture-nsw
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: NSW
+as_of: "2026-11-23"
+inputs: {"incident_type":"injury_or_illness","arose_from_work":true,"injury_categories":["other_serious_fracture"]}
+expect: {"outcome": "needs_information", "escalation_recommended": true, "action_ids": ["confirm-local-adoption-with-regulator"], "reason_rule_ids": ["amended-category-check-adoption"], "missing_paths": []}

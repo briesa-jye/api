@@ -1,0 +1,8 @@
+# Synthetic fixture (made-up facts). Mobile plant incident: a December 2025 category, adoption unconfirmed in SA.
+id: dangerous-mobile-plant-sa
+synthetic: true
+scenario_type: classify_incident
+jurisdiction: SA
+as_of: "2026-11-23"
+inputs: {"incident_type":"dangerous_incident","arose_from_work":true,"dangerous_incident_categories":["mobile_plant_incident"],"serious_risk_exposed":"yes"}
+expect: {"outcome": "needs_information", "escalation_recommended": true, "action_ids": ["confirm-local-adoption-with-regulator"], "reason_rule_ids": ["amended-category-check-adoption"], "missing_paths": []}

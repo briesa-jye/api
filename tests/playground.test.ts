@@ -20,8 +20,8 @@ describe("playground form generation from pack schemas", () => {
         it("flattens every schema property into a field, nested ones with dot paths", () => {
           expect(fields.length).toBeGreaterThan(0);
           expect(new Set(fields.map((f) => f.path)).size).toBe(fields.length);
-          for (const f of fields) expect(["enum", "boolean", "integer", "number", "string"]).toContain(f.kind);
-          for (const f of fields.filter((x) => x.kind === "enum")) expect(f.options!.length).toBeGreaterThan(0);
+          for (const f of fields) expect(["enum", "multi", "boolean", "integer", "number", "string"]).toContain(f.kind);
+          for (const f of fields.filter((x) => x.kind === "enum" || x.kind === "multi")) expect(f.options!.length).toBeGreaterThan(0);
         });
 
         for (const ex of pack.scenarios.filter((s) => s.scenario_type === scenarioType)) {

@@ -79,7 +79,21 @@ export function Playground({ catalog }: { catalog: PlaygroundPack[] }) {
               return (
                 <div key={f.path} className="space-y-1.5">
                   <Label htmlFor={id}>{f.label}{f.required && <span className="text-accent-hover ml-1" aria-label="required">*</span>}</Label>
-                  {f.kind === "enum" || f.kind === "boolean" ? (
+                  {f.kind === "multi" ? (
+                    <div id={id} role="group" aria-label={f.label} className="space-y-1.5">
+                      <input type="hidden" name={`f:${f.path}`} value={v} />
+                      {f.options!.map((o) => {
+                        const chosen = v.split(",").filter(Boolean);
+                        const on = chosen.includes(o);
+                        return (
+                          <label key={o} className="flex items-center gap-2 text-sm">
+                            <input type="checkbox" checked={on} onChange={() => set(f.path, (on ? chosen.filter((x) => x !== o) : [...chosen, o]).join(","))} />
+                            {humanize(o)}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  ) : f.kind === "enum" || f.kind === "boolean" ? (
                     <Select id={id} name={`f:${f.path}`} value={v} onChange={(e) => set(f.path, e.target.value)}>
                       <option value="">{f.required ? "Choose..." : "Not provided"}</option>
                       {f.kind === "boolean" ? (<><option value="true">Yes</option><option value="false">No</option></>) : f.options!.map((o) => <option key={o} value={o}>{humanize(o)}</option>)}
