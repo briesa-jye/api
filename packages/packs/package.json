@@ -5,7 +5,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./registry": "./src/registry.ts",
-    "./assessment": "./src/assessment.ts"
+    "./assessment": "./src/assessment.ts",
+    "./core": "./src/core.ts"
   },
   "dependencies": {
     "@briesa/engine": "workspace:*",
