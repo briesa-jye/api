@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Notice } from "@/components/ui/input";
 import { SelectMenu } from "@/components/ui/select-menu";
 import { requireAccount } from "@/lib/account";
+import { actorOf } from "@/lib/check";
 import { outcomeLevel } from "@/lib/outcomes";
 import { getRegistry } from "@/lib/packs";
 import { getStore } from "@/lib/store";
@@ -51,8 +52,8 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
       {lookup && <Notice className="mb-4">No record found for that request ID in your account. Records are removed after your retention period ({tenant.retentionDays} days).</Notice>}
 
       <div className="overflow-x-auto rounded-xl border">
-        <table className="w-full min-w-[44rem]">
-          <thead className="bg-muted/30 border-b"><tr><Th>When</Th><Th>Pack</Th><Th>Outcome</Th><Th>Mode</Th><Th>Reference</Th><Th>Request</Th></tr></thead>
+        <table className="w-full min-w-[50rem]">
+          <thead className="bg-muted/30 border-b"><tr><Th>When</Th><Th>Pack</Th><Th>Outcome</Th><Th>Mode</Th><Th>By</Th><Th>Reference</Th><Th>Request</Th></tr></thead>
           <tbody className="divide-y divide-dashed">
             {page.length === 0 && <tr><Td className="text-muted-foreground py-10 text-center" >No records match. Run an assessment and it appears here.</Td></tr>}
             {page.map((r) => {
@@ -63,6 +64,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                   <Td className="font-mono text-xs">{r.packId ?? "-"}</Td>
                   <Td><OutcomePill outcome={o.outcome ?? null} {...outcomeLevel(r.packId, o.outcome ?? null)} />{o.escalation_recommended && <Badge variant="outline" size="sm" className="ml-2">escalate</Badge>}</Td>
                   <Td><Badge variant={r.test ? "outline" : "amber"}>{r.test ? "test" : "live"}</Badge></Td>
+                  <Td className="max-w-44 truncate text-xs">{actorOf(r.keyId) ?? <span className="text-muted-foreground">API key</span>}</Td>
                   <Td className="max-w-40 truncate text-xs">{r.reference ?? <span className="text-muted-foreground">-</span>}</Td>
                   <Td><Link href={`/dashboard/audit/${r.requestId}`} className="text-accent-hover font-mono text-xs underline underline-offset-4">{r.requestId}</Link></Td>
                 </tr>

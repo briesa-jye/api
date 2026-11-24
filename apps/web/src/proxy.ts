@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { supabaseKey, supabaseUrl } from "@/lib/supabase/config";
 
 /**
- * Refreshes the Supabase session cookie on every request and keeps signed-out visitors out of /dashboard.
+ * Refreshes the Supabase session cookie on every request and keeps signed-out visitors out of /dashboard and /check.
  * (Next 16 renamed middleware to proxy.) Pages still validate the user themselves; this is a first gate.
  */
 export async function proxy(req: NextRequest) {
@@ -27,7 +27,7 @@ export async function proxy(req: NextRequest) {
     const { data } = await supabase.auth.getUser();
     signedIn = !!data.user;
   }
-  if (!signedIn && req.nextUrl.pathname.startsWith("/dashboard")) {
+  if (!signedIn && (req.nextUrl.pathname.startsWith("/dashboard") || req.nextUrl.pathname.startsWith("/check"))) {
     const login = new URL("/login", req.url);
     login.searchParams.set("next", req.nextUrl.pathname + req.nextUrl.search);
     return NextResponse.redirect(login);

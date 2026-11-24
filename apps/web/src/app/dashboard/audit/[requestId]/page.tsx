@@ -1,3 +1,4 @@
+import { actorOf } from "@/lib/check";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -23,7 +24,7 @@ export default async function AuditRecordPage({ params }: { params: Promise<{ re
       <Link href="/dashboard/audit" className="text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-1.5 text-sm"><ArrowLeft className="size-3.5" aria-hidden />All records</Link>
       <PageHeader title={rec.requestId} description={`${rec.createdAt.toLocaleString("en-AU", { dateStyle: "full", timeStyle: "medium" })} · ${rec.test ? "test" : "live"} call`} />
       <dl className="mb-8 grid gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-2 lg:grid-cols-4">
-        {[["Pack", rec.packId ? `${rec.packId} v${rec.packVersion}` : "-"], ["Your reference", rec.reference ?? "-"], ["Inputs hash", rec.inputsHash.slice(0, 16) + "..."], ["AI model", rec.model ?? "none"]].map(([k, v]) => (
+        {[["Pack", rec.packId ? `${rec.packId} v${rec.packVersion}` : "-"], ["Your reference", rec.reference ?? "-"], ["Run by", actorOf(rec.keyId) ?? "An API key"], ["Inputs hash", rec.inputsHash.slice(0, 16) + "..."], ["AI model", rec.model ?? "none"]].map(([k, v]) => (
           <div key={k} className="bg-card p-4"><dt className="text-muted-foreground font-mono text-[0.625rem] tracking-wider uppercase">{k}</dt><dd className="mt-1.5 truncate font-mono text-xs">{v}</dd></div>
         ))}
       </dl>

@@ -112,3 +112,7 @@ Defaults chosen by the build, as agreed with Jye. Change any of these before pro
 - `RATE_LIMIT_STORE=database`: rate-limit counters are shared through Postgres (table `RateWindow`, migration 0007) instead of per-process memory. Needed only when running more than one instance; if the database is unreachable it falls back to per-instance limits for that call. Apply migration 0007 before enabling.
 - `TEST_MONTHLY_CAP` (default 10000): monthly call cap for test keys that have no cap of their own. Live keys never get a default cap.
 - Request bodies over 256 KiB get 413 `payload_too_large`; a request must arrive within 30 s.
+
+## Quick check (internal staff tool)
+
+`/check` is a compact, signed-in page for employees (also installable as a Dock or home-screen web app via the manifest). It runs the same `assessPack` as the API, with no API key: the audit record's `keyId` is `user:<email>` so Audit shows who ran each check, and a usage event is recorded so it is billed like an API call. With no active subscription it runs in test mode, free and marked as a test. A planned Mac menu-bar app would wrap this page, so staff sign in with their own account and no key ever ships inside the app.
