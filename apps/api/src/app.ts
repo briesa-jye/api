@@ -57,6 +57,8 @@ export interface AppOptions {
    * Used to rate-limit each visitor of a publishable key separately. Without it, the connection's address is used.
    */
   clientIpHeader?: string;
+  /** Monthly call cap applied to test keys that have no cap of their own (default 10,000; null for none). */
+  testMonthlyCap?: number | null;
   /** Largest accepted request body in bytes (default 256 KiB). */
   bodyLimit?: number;
   /** How long a request may take to arrive in full (default 30 s). */
@@ -97,6 +99,10 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
       ? { level: "info", redact: ["req.headers.authorization", "req.headers.cookie"] }
       : false,
   });
+
+  // Test keys are free, so without an explicit cap they get a generous default one: a leaked or runaway test key cannot run unbounded.
+  const testCap = opts.testMonthlyCap === undefined ? 10_000 : opts.testMonthlyCap;
+  const capOf = (rec: ApiKeyRecord): number | null => rec.monthlyCap ?? (rec.mode === "test" ? testCap : null);
 
   // Billable calls this process has seen per capped key this month, seeded from the database on first use.
   const usageCount = new Map<string, { month: string; count: number }>();
@@ -191,20 +197,21 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
       throw new ApiError("permission_error", "missing_scope", `This key lacks the '${cfg.scope}' scope.`);
     }
 
-    if (rec.monthlyCap !== null && cfg.billable && (await currentUsage(rec)).count >= rec.monthlyCap) {
-      throw new ApiError("rate_limit_error", "monthly_cap_reached", `This key reached its monthly limit of ${rec.monthlyCap} calls. Raise the cap in the dashboard, or wait for next month.`);
+    const cap = capOf(rec);
+    if (cap !== null && cfg.billable && (await currentUsage(rec)).count >= cap) {
+      throw new ApiError("rate_limit_error", "monthly_cap_reached", `This key reached its monthly limit of ${cap} calls. Raise the cap in the dashboard, or wait for next month.`);
     }
 
     // A publishable key is shared by every visitor of a site, so each visitor also gets a slice of it and cannot use it all up.
     if (rec.kind === "publishable") {
       const ip = (opts.clientIpHeader ? String(req.headers[opts.clientIpHeader] ?? "") : "") || req.ip;
-      const slice = limiter.hit(`${rec.id}:ip:${ip}`, Math.max(5, Math.ceil(rec.rateLimitPerMinute / 3)));
+      const slice = await limiter.hit(`${rec.id}:ip:${ip}`, Math.max(5, Math.ceil(rec.rateLimitPerMinute / 3)));
       if (slice.remaining < 0) {
         reply.header("retry-after", Math.ceil(slice.resetMs / 1000));
         throw new ApiError("rate_limit_error", "rate_limited", "Too many requests from this visitor. Please wait a moment.");
       }
     }
-    const rl = limiter.hit(rec.id, rec.rateLimitPerMinute);
+    const rl = await limiter.hit(rec.id, rec.rateLimitPerMinute);
     reply.header("x-ratelimit-limit", rec.rateLimitPerMinute);
     reply.header("x-ratelimit-remaining", Math.max(0, rl.remaining));
     if (rl.remaining < 0) {
@@ -259,7 +266,7 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
     const billable = req.routeOptions.config?.billable;
     // An idempotent replay returns a stored response without running the handler: it is not a new billable event.
     if (!billable || !req.auth || reply.statusCode >= 400 || reply.getHeader("idempotent-replayed")) return;
-    const seen = req.auth.monthlyCap !== null ? await currentUsage(req.auth) : null; // read before recording so the first count is not doubled
+    const seen = capOf(req.auth) !== null ? await currentUsage(req.auth) : null; // read before recording so the first count is not doubled
     await store.recordUsage({
       tenantId: req.auth.tenantId, keyId: req.auth.id, packId: req.packId ?? null,
       endpoint: billable, test: req.auth.mode === "test", month: monthOf(),

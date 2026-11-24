@@ -4,7 +4,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./prisma": "./src/prisma-index.ts"
+    "./prisma": "./src/prisma-index.ts",
+    "./secretbox": "./src/secretbox.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",

@@ -105,6 +105,13 @@ export class MemoryStore implements Store {
     return { ...k, allowedOrigins: [...k.allowedOrigins] };
   }
   async ping() {}
+  private rateWindows = new Map<string, number>();
+  async hitRateWindow(key: string, windowStart: Date) {
+    const k = `${key}@${windowStart.getTime()}`;
+    const n = (this.rateWindows.get(k) ?? 0) + 1;
+    this.rateWindows.set(k, n);
+    return n;
+  }
   async countKeyUsage(tenantId: string, keyId: string, month: string) {
     return this.usage.filter((e) => e.tenantId === tenantId && e.keyId === keyId && e.month === month).length;
   }

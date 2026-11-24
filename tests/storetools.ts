@@ -9,17 +9,17 @@ import { PrismaPGlite } from "pglite-prisma-adapter";
 const migrations = resolve(import.meta.dirname, "../packages/db/prisma/migrations");
 
 /** A real (in-process, WASM) Postgres with the project's actual migration SQL applied in order. */
-export async function makePrismaStore() {
+export async function makePrismaStore(opts: { secretKey?: Buffer } = {}) {
   const pg = new PGlite();
   for (const dir of readdirSync(migrations).filter((d) => /^\d{4}_/.test(d)).sort()) {
     await pg.exec(readFileSync(join(migrations, dir, "migration.sql"), "utf8"));
   }
   const client = new PrismaClient({ adapter: new PrismaPGlite(pg) });
-  const store = new PrismaStore(client);
+  const store = new PrismaStore(client, opts);
   return { store, pg, client, close: async () => { await client.$disconnect(); await pg.close(); } };
 }
 
 export const storeFactories: { name: string; make: () => Promise<{ store: Store; close: () => Promise<void> }> }[] = [
   { name: "MemoryStore", make: async () => ({ store: new MemoryStore(), close: async () => {} }) },
-  { name: "PrismaStore (Postgres via PGlite)", make: makePrismaStore },
+  { name: "PrismaStore (Postgres via PGlite)", make: () => makePrismaStore() },
 ];

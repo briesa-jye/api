@@ -105,3 +105,10 @@ Defaults chosen by the build, as agreed with Jye. Change any of these before pro
 - **`baseUrl` defaults to the current production host** (`briesa-api.fly.dev`). When a custom domain is connected, change `DEFAULT_BASE_URL` in a minor release; everyone who sets `baseUrl` is unaffected.
 - **Not published.** The package is `private` with `UNLICENSED` so it cannot be published by accident. To publish: pick the npm scope and name (the name `@briesa/sdk` needs an npm org called `briesa`), set a licence, remove `"private": true`, then `corepack pnpm sdk:build && cd packages/sdk && npm publish --access public`. Do this once the API's version number and the DEFAULT_BASE_URL are settled.
 
+
+## Hardening settings
+
+- `WEBHOOK_SECRET_KEY` (32 bytes, base64 or hex): webhook signing secrets are stored AES-256-GCM encrypted. Existing plaintext rows are encrypted at startup. Losing the key makes stored secrets unreadable: endpoints would need recreating, so keep a copy somewhere safe. Unset, secrets stay plaintext and production logs a warning.
+- `RATE_LIMIT_STORE=database`: rate-limit counters are shared through Postgres (table `RateWindow`, migration 0007) instead of per-process memory. Needed only when running more than one instance; if the database is unreachable it falls back to per-instance limits for that call. Apply migration 0007 before enabling.
+- `TEST_MONTHLY_CAP` (default 10000): monthly call cap for test keys that have no cap of their own. Live keys never get a default cap.
+- Request bodies over 256 KiB get 413 `payload_too_large`; a request must arrive within 30 s.

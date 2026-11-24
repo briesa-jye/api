@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { decryptSecret, encryptSecret, isEncrypted } from "./secretbox.ts";
 import { FINISHED_DELIVERY_TTL_MS, IDEMPOTENCY_PENDING_MS, IDEMPOTENCY_TTL_MS } from "./types.ts";
 import type {
   ApiKeyRecord, ApiKeyUpdate, AuditInput, AuditListQuery, AuditRecord, AuditStatRow, IdempotencyClaim, IdempotencyRecord, KeyKind, KeyMode, NewApiKey, PurgeResult, Store, Tenant, UsageEvent, UsageSummaryRow,
@@ -16,14 +17,35 @@ const json = (v: unknown) => (v === undefined || v === null ? Prisma.JsonNull : 
 const isUnique = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
 
 const toKey = (k: { mode: string; kind: string } & Omit<ApiKeyRecord, "mode" | "kind">): ApiKeyRecord => ({ ...k, mode: k.mode as KeyMode, kind: k.kind as KeyKind });
-const toEndpoint = (e: { events: string[] } & Omit<WebhookEndpoint, "events">): WebhookEndpoint => ({ ...e, events: e.events as WebhookEvent[] });
 const toDelivery = (d: { event: string; status: string } & Omit<WebhookDelivery, "event" | "status">): WebhookDelivery =>
   ({ ...d, event: d.event as WebhookEvent, status: d.status as WebhookDelivery["status"] });
 
 /** Postgres-backed Store. Every tenant-scoped method filters by tenantId in the query itself. */
 export class PrismaStore implements Store {
   private db: PrismaClient;
-  constructor(db: PrismaClient) { this.db = db; }
+  private secretKey: Buffer | null;
+  /** `secretKey` encrypts webhook signing secrets at rest (AES-256-GCM). Without it they are stored as given. */
+  constructor(db: PrismaClient, opts: { secretKey?: Buffer | null } = {}) { this.db = db; this.secretKey = opts.secretKey ?? null; }
+  private toEndpoint = (e: { events: string[] } & Omit<WebhookEndpoint, "events">): WebhookEndpoint =>
+    ({ ...e, events: e.events as WebhookEvent[], secret: decryptSecret(e.secret, this.secretKey) });
+  /** Encrypts any plaintext webhook secrets already stored. Idempotent; returns how many rows changed. */
+  async encryptLegacySecrets(): Promise<number> {
+    if (!this.secretKey) return 0;
+    let n = 0;
+    for (const e of await this.db.webhookEndpoint.findMany({ select: { id: true, secret: true } })) {
+      if (isEncrypted(e.secret)) continue;
+      await this.db.webhookEndpoint.update({ where: { id: e.id }, data: { secret: encryptSecret(e.secret, this.secretKey) } });
+      n++;
+    }
+    return n;
+  }
+  async hitRateWindow(key: string, windowStart: Date) {
+    const rows = await this.db.$queryRaw<{ count: number }[]>`INSERT INTO "RateWindow" ("key", "windowStart", "count")
+      VALUES (${key}, ${utc(windowStart)}, 1)
+      ON CONFLICT ("key", "windowStart") DO UPDATE SET "count" = "RateWindow"."count" + 1
+      RETURNING "count"`;
+    return rows[0]!.count;
+  }
   disconnect() { return this.db.$disconnect(); }
   async ping() { await this.db.$queryRaw`SELECT 1`; }
 
@@ -84,6 +106,7 @@ export class PrismaStore implements Store {
         WHERE a."tenantId" = t.id AND a."createdAt" < ${utc(now)} - (t."retentionDays" * interval '1 day')`;
       const idempotency = (await tx.idempotencyRecord.deleteMany({ where: { createdAt: { lt: new Date(now.getTime() - IDEMPOTENCY_TTL_MS) } } })).count;
       const deliveries = (await tx.webhookDelivery.deleteMany({ where: { status: { not: "pending" }, createdAt: { lt: new Date(now.getTime() - FINISHED_DELIVERY_TTL_MS) } } })).count;
+      await tx.rateWindow.deleteMany({ where: { windowStart: { lt: new Date(now.getTime() - 3_600_000) } } });
       return { audit, idempotency, deliveries };
     });
   }
@@ -194,10 +217,10 @@ export class PrismaStore implements Store {
 
   // --- webhooks
   async createWebhookEndpoint(input: Omit<WebhookEndpoint, "id" | "createdAt" | "disabledAt">) {
-    return toEndpoint(await this.db.webhookEndpoint.create({ data: input }));
+    return this.toEndpoint(await this.db.webhookEndpoint.create({ data: { ...input, secret: this.secretKey ? encryptSecret(input.secret, this.secretKey) : input.secret } }));
   }
   async listWebhookEndpoints(tenantId: string) {
-    return (await this.db.webhookEndpoint.findMany({ where: { tenantId, disabledAt: null }, orderBy: { createdAt: "asc" } })).map(toEndpoint);
+    return (await this.db.webhookEndpoint.findMany({ where: { tenantId, disabledAt: null }, orderBy: { createdAt: "asc" } })).map(this.toEndpoint);
   }
   async disableWebhookEndpoint(tenantId: string, id: string) {
     return this.db.$transaction(async (tx) => {
@@ -211,11 +234,11 @@ export class PrismaStore implements Store {
     return (await this.db.webhookDelivery.findMany({ where: { tenantId, endpointId }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: limit })).map(toDelivery);
   }
   async systemListWebhookEndpoints(event: WebhookEvent) {
-    return (await this.db.webhookEndpoint.findMany({ where: { disabledAt: null, events: { has: event } } })).map(toEndpoint);
+    return (await this.db.webhookEndpoint.findMany({ where: { disabledAt: null, events: { has: event } } })).map(this.toEndpoint);
   }
   async systemGetWebhookEndpoint(id: string) {
     const e = await this.db.webhookEndpoint.findUnique({ where: { id } });
-    return e ? toEndpoint(e) : null;
+    return e ? this.toEndpoint(e) : null;
   }
   async createWebhookDelivery(input: Omit<WebhookDelivery, "id" | "createdAt" | "deliveredAt" | "attempts" | "lastStatusCode" | "lastError" | "status">) {
     return toDelivery(await this.db.webhookDelivery.create({ data: { ...input, status: "pending" } }));

@@ -182,6 +182,8 @@ export interface WebhookDelivery {
 export interface Store {
   /** Resolves when the database answers; rejects when it does not. Used by /ready. */
   ping(): Promise<void>;
+  /** Counts one hit in the fixed window starting at `windowStart` and returns the new count. Atomic across instances. */
+  hitRateWindow(key: string, windowStart: Date): Promise<number>;
   createTenant(input: { name: string; retentionDays?: number; billingExempt?: boolean }): Promise<Tenant>;
   updateTenantBilling(tenantId: string, patch: TenantBillingPatch): Promise<boolean>;
   /** System lookups used by the dashboard and the Stripe webhook. */

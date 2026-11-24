@@ -109,12 +109,21 @@ model WebhookEndpoint {
   url        String
   events     String[]
   packs      String[]
-  secret     String // TODO: encrypt at rest (needed in plaintext to sign)
+  secret     String // AES-256-GCM "enc:v1:..." when WEBHOOK_SECRET_KEY is set; legacy rows may be plaintext
   createdAt  DateTime          @default(now())
   disabledAt DateTime?
   deliveries WebhookDelivery[]
 
   @@index([tenantId])
+}
+
+model RateWindow {
+  key         String
+  windowStart DateTime
+  count       Int
+
+  @@id([key, windowStart])
+  @@index([windowStart])
 }
 
 model WebhookDelivery {
