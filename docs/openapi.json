@@ -2473,8 +2473,13 @@
         "required": [
           "id",
           "name",
+          "industry",
+          "regulators",
+          "jurisdictions",
+          "version",
           "status",
-          "version"
+          "reviewer",
+          "licence_tier"
         ],
         "properties": {
           "id": {
@@ -2537,11 +2542,19 @@
           },
           {
             "type": "object",
+            "required": [
+              "scenario_types"
+            ],
             "properties": {
               "scenario_types": {
                 "type": "object",
                 "additionalProperties": {
                   "type": "object",
+                  "required": [
+                    "description",
+                    "outcomes",
+                    "input_schema"
+                  ],
                   "properties": {
                     "description": {
                       "type": "string"
@@ -2572,9 +2585,15 @@
           "missing_information",
           "escalation_recommended",
           "reasons",
+          "rules_pending_review",
+          "ai_assisted_notes",
+          "ai_status",
           "pack",
+          "as_of",
+          "reference",
           "disclaimer",
           "human_review_recommended",
+          "test_mode",
           "request_id"
         ],
         "properties": {
@@ -3165,7 +3184,19 @@
             "type": "string",
             "format": "date-time"
           }
-        }
+        },
+        "required": [
+          "request_id",
+          "endpoint",
+          "pack",
+          "rule_versions",
+          "inputs_hash",
+          "reference",
+          "output",
+          "model",
+          "test",
+          "created_at"
+        ]
       },
       "UsageRow": {
         "type": "object",
@@ -3185,7 +3216,13 @@
           "count": {
             "type": "integer"
           }
-        }
+        },
+        "required": [
+          "packId",
+          "endpoint",
+          "test",
+          "count"
+        ]
       },
       "ApiKey": {
         "type": "object",
@@ -3257,7 +3294,22 @@
             ],
             "description": "The full key, for publishable keys only (they are public by design)"
           }
-        }
+        },
+        "required": [
+          "id",
+          "name",
+          "prefix",
+          "mode",
+          "scopes",
+          "rate_limit_per_minute",
+          "created_at",
+          "revoked_at",
+          "rotated_from",
+          "kind",
+          "allowed_origins",
+          "monthly_cap",
+          "public_key"
+        ]
       },
       "ApiKeyCreated": {
         "allOf": [
@@ -3307,7 +3359,14 @@
             "type": "string",
             "format": "date-time"
           }
-        }
+        },
+        "required": [
+          "id",
+          "url",
+          "events",
+          "packs",
+          "created_at"
+        ]
       },
       "WebhookCreated": {
         "allOf": [
@@ -3375,7 +3434,18 @@
               "null"
             ]
           }
-        }
+        },
+        "required": [
+          "id",
+          "event",
+          "status",
+          "attempts",
+          "last_status_code",
+          "last_error",
+          "next_attempt_at",
+          "created_at",
+          "delivered_at"
+        ]
       },
       "Rule___schema0": {
         "anyOf": [

@@ -63,6 +63,17 @@ const ERR_DESC: Record<string, string> = {
 
 export const toOpenApiPath = (fastifyUrl: string) => fastifyUrl.replace(/:([A-Za-z_]+)/g, "{$1}");
 
+/**
+ * Response views build every field on every response (a missing value is null, never absent), so every property is required.
+ * Declaring that gives SDK users `string`, not `string | undefined`, for fields that are always there; a test checks real responses against it.
+ */
+function alwaysPresent(schemas: Record<string, Obj>, names: string[]) {
+  for (const n of names) {
+    const schema = schemas[n] as { properties?: Record<string, unknown>; required?: string[] } | undefined;
+    if (schema?.properties) schema.required = Object.keys(schema.properties);
+  }
+}
+
 export function buildOpenApi(): Obj {
   const paths: Record<string, Obj> = {};
   for (const o of OPS) {
@@ -94,7 +105,7 @@ export function buildOpenApi(): Obj {
   });
   const ruleChange = { type: "object", properties: { added: { type: "array", items: str }, changed: { type: "array", items: str }, removed: { type: "array", items: str } }, required: ["added", "changed", "removed"] };
 
-  return {
+  const doc = {
     openapi: "3.1.0",
     info: {
       title: "Briesa Compliance API", version: "0.1.0",
@@ -116,7 +127,7 @@ export function buildOpenApi(): Obj {
         ErrorResponse: { type: "object", required: ["error"], properties: { error: { type: "object", required: ["type", "code", "message", "request_id"], properties: { type: { enum: ["invalid_request_error", "authentication_error", "permission_error", "not_found_error", "idempotency_error", "rate_limit_error", "api_error"] }, code: str, message: str, request_id: str } } } },
         Source: source,
         Pack: { type: "object", required: ["id", "name", "status", "version"], properties: { id: str, name: str, industry: str, regulators: { type: "array", items: str }, jurisdictions: { type: "array", items: str }, version: str, status: { enum: ["draft", "beta", "verified"] }, reviewer: { type: ["object", "null"], properties: { name: str, verified_on: str, source_version: str } }, licence_tier: str } },
-        PackDetail: { allOf: [ref("Pack"), { type: "object", properties: { scenario_types: { type: "object", additionalProperties: { type: "object", properties: { description: str, outcomes: { type: "array", items: str, description: "Lowest to highest" }, input_schema: { type: "object", description: "JSON Schema for `inputs`" } } } } } }] },
+        PackDetail: { allOf: [ref("Pack"), { type: "object", required: ["scenario_types"], properties: { scenario_types: { type: "object", additionalProperties: { type: "object", required: ["description", "outcomes", "input_schema"], properties: { description: str, outcomes: { type: "array", items: str, description: "Lowest to highest" }, input_schema: { type: "object", description: "JSON Schema for `inputs`" } } } } } }] },
         AssessResponse: { type: "object", required: ["outcome", "required_actions", "missing_information", "escalation_recommended", "reasons", "pack", "disclaimer", "human_review_recommended", "request_id"], properties: {
           outcome: { type: "string", description: "One of the pack's outcomes for this scenario type" },
           required_actions: { type: "array", items: { type: "object", properties: { id: str, description: str, rule_id: str } } },
@@ -141,4 +152,6 @@ export function buildOpenApi(): Obj {
       },
     },
   };
+  alwaysPresent(doc.components.schemas as Record<string, Obj>, ["Pack", "AssessResponse", "AuditRecord", "UsageRow", "ApiKey", "Webhook", "WebhookDelivery"]);
+  return doc;
 }
