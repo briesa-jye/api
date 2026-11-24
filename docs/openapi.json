@@ -161,7 +161,7 @@
             }
           },
           "403": {
-            "description": "Key lacks the required scope or pack licence",
+            "description": "Key lacks the required scope or pack licence. For browser use: `secret_key_in_browser`, `origin_required`, `origin_not_allowed`, `not_available_to_publishable_keys`, `ai_notes_not_available`",
             "content": {
               "application/json": {
                 "schema": {
@@ -171,7 +171,7 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded; see Retry-After",
+            "description": "Rate limit exceeded (`rate_limited`, see Retry-After) or the key's monthly cap is reached (`monthly_cap_reached`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -239,7 +239,7 @@
             }
           },
           "403": {
-            "description": "Key lacks the required scope or pack licence",
+            "description": "Key lacks the required scope or pack licence. For browser use: `secret_key_in_browser`, `origin_required`, `origin_not_allowed`, `not_available_to_publishable_keys`, `ai_notes_not_available`",
             "content": {
               "application/json": {
                 "schema": {
@@ -259,7 +259,7 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded; see Retry-After",
+            "description": "Rate limit exceeded (`rate_limited`, see Retry-After) or the key's monthly cap is reached (`monthly_cap_reached`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -404,7 +404,7 @@
             }
           },
           "403": {
-            "description": "Key lacks the required scope or pack licence",
+            "description": "Key lacks the required scope or pack licence. For browser use: `secret_key_in_browser`, `origin_required`, `origin_not_allowed`, `not_available_to_publishable_keys`, `ai_notes_not_available`",
             "content": {
               "application/json": {
                 "schema": {
@@ -434,7 +434,7 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded; see Retry-After",
+            "description": "Rate limit exceeded (`rate_limited`, see Retry-After) or the key's monthly cap is reached (`monthly_cap_reached`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -522,7 +522,7 @@
             }
           },
           "403": {
-            "description": "Key lacks the required scope or pack licence",
+            "description": "Key lacks the required scope or pack licence. For browser use: `secret_key_in_browser`, `origin_required`, `origin_not_allowed`, `not_available_to_publishable_keys`, `ai_notes_not_available`",
             "content": {
               "application/json": {
                 "schema": {
@@ -542,7 +542,7 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded; see Retry-After",
+            "description": "Rate limit exceeded (`rate_limited`, see Retry-After) or the key's monthly cap is reached (`monthly_cap_reached`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -625,7 +625,7 @@
             }
           },
           "403": {
-            "description": "Key lacks the required scope or pack licence",
+            "description": "Key lacks the required scope or pack licence. For browser use: `secret_key_in_browser`, `origin_required`, `origin_not_allowed`, `not_available_to_publishable_keys`, `ai_notes_not_available`",
             "content": {
               "application/json": {
                 "schema": {
@@ -645,7 +645,7 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded; see Retry-After",
+            "description": "Rate limit exceeded (`rate_limited`, see Retry-After) or the key's monthly cap is reached (`monthly_cap_reached`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -756,7 +756,7 @@
             }
           },
           "403": {
-            "description": "Key lacks the required scope or pack licence",
+            "description": "Key lacks the required scope or pack licence. For browser use: `secret_key_in_browser`, `origin_required`, `origin_not_allowed`, `not_available_to_publishable_keys`, `ai_notes_not_available`",
             "content": {
               "application/json": {
                 "schema": {
@@ -776,7 +776,7 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded; see Retry-After",
+            "description": "Rate limit exceeded (`rate_limited`, see Retry-After) or the key's monthly cap is reached (`monthly_cap_reached`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -913,7 +913,7 @@
             }
           },
           "403": {
-            "description": "Key lacks the required scope or pack licence",
+            "description": "Key lacks the required scope or pack licence. For browser use: `secret_key_in_browser`, `origin_required`, `origin_not_allowed`, `not_available_to_publishable_keys`, `ai_notes_not_available`",
             "content": {
               "application/json": {
                 "schema": {
@@ -923,7 +923,7 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded; see Retry-After",
+            "description": "Rate limit exceeded (`rate_limited`, see Retry-After) or the key's monthly cap is reached (`monthly_cap_reached`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -991,7 +991,7 @@
             }
           },
           "403": {
-            "description": "Key lacks the required scope or pack licence",
+            "description": "Key lacks the required scope or pack licence. For browser use: `secret_key_in_browser`, `origin_required`, `origin_not_allowed`, `not_available_to_publishable_keys`, `ai_notes_not_available`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1011,7 +1011,7 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded; see Retry-After",
+            "description": "Rate limit exceeded (`rate_limited`, see Retry-After) or the key's monthly cap is reached (`monthly_cap_reached`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1104,7 +1104,7 @@
             }
           },
           "403": {
-            "description": "Key lacks the required scope or pack licence",
+            "description": "Key lacks the required scope or pack licence. For browser use: `secret_key_in_browser`, `origin_required`, `origin_not_allowed`, `not_available_to_publishable_keys`, `ai_notes_not_available`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1114,7 +1114,7 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded; see Retry-After",
+            "description": "Rate limit exceeded (`rate_limited`, see Retry-After) or the key's monthly cap is reached (`monthly_cap_reached`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1182,7 +1182,7 @@
             }
           },
           "403": {
-            "description": "Key lacks the required scope or pack licence",
+            "description": "Key lacks the required scope or pack licence. For browser use: `secret_key_in_browser`, `origin_required`, `origin_not_allowed`, `not_available_to_publishable_keys`, `ai_notes_not_available`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1192,7 +1192,7 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded; see Retry-After",
+            "description": "Rate limit exceeded (`rate_limited`, see Retry-After) or the key's monthly cap is reached (`monthly_cap_reached`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1206,7 +1206,7 @@
       "post": {
         "operationId": "createKey",
         "summary": "Create an API key",
-        "description": "The plaintext key is returned once and cannot be retrieved again. A key can only grant scopes it holds itself.",
+        "description": "A secret key (the default) is returned once and cannot be retrieved again. Set `kind` to `publishable` for a key that is safe to put in a browser widget: it needs `allowed_origins`, can only hold `assess`, `read` and named `pack:<id>` scopes, can only run assessments and read pack details, and has a rate limit and a monthly cap (defaults 30 per minute; 500 test or 5,000 live calls a month). A key can only grant scopes it holds itself.",
         "tags": [
           "API keys"
         ],
@@ -1247,6 +1247,28 @@
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 10000
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "secret",
+                      "publishable"
+                    ]
+                  },
+                  "allowed_origins": {
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  },
+                  "monthly_cap": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000000
                   }
                 },
                 "required": [
@@ -1301,7 +1323,7 @@
             }
           },
           "403": {
-            "description": "Key lacks the required scope or pack licence",
+            "description": "Key lacks the required scope or pack licence. For browser use: `secret_key_in_browser`, `origin_required`, `origin_not_allowed`, `not_available_to_publishable_keys`, `ai_notes_not_available`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1311,7 +1333,151 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded; see Retry-After",
+            "description": "Rate limit exceeded (`rate_limited`, see Retry-After) or the key's monthly cap is reached (`monthly_cap_reached`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/keys/{id}": {
+      "patch": {
+        "operationId": "updateKey",
+        "summary": "Change a key's settings",
+        "description": "Change the name, allowed origins, monthly cap or rate limit of an active key. Scopes, mode and kind cannot change: create a new key for that. A publishable key must keep a monthly cap.",
+        "tags": [
+          "API keys"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-scope": "keys:manage",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Key id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "allowed_origins": {
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  },
+                  "monthly_cap": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10000000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "rate_limit_per_minute": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKey"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request (type `invalid_request_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or revoked API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Live keys need an active subscription (test keys are free); code `subscription_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Key lacks the required scope or pack licence. For browser use: `secret_key_in_browser`, `origin_required`, `origin_not_allowed`, `not_available_to_publishable_keys`, `ai_notes_not_available`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Packs you are not licensed for also return 404.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded (`rate_limited`, see Retry-After) or the key's monthly cap is reached (`monthly_cap_reached`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1380,7 +1546,7 @@
             }
           },
           "403": {
-            "description": "Key lacks the required scope or pack licence",
+            "description": "Key lacks the required scope or pack licence. For browser use: `secret_key_in_browser`, `origin_required`, `origin_not_allowed`, `not_available_to_publishable_keys`, `ai_notes_not_available`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1400,7 +1566,7 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded; see Retry-After",
+            "description": "Rate limit exceeded (`rate_limited`, see Retry-After) or the key's monthly cap is reached (`monthly_cap_reached`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1468,7 +1634,7 @@
             }
           },
           "403": {
-            "description": "Key lacks the required scope or pack licence",
+            "description": "Key lacks the required scope or pack licence. For browser use: `secret_key_in_browser`, `origin_required`, `origin_not_allowed`, `not_available_to_publishable_keys`, `ai_notes_not_available`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1488,7 +1654,7 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded; see Retry-After",
+            "description": "Rate limit exceeded (`rate_limited`, see Retry-After) or the key's monthly cap is reached (`monthly_cap_reached`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1556,7 +1722,7 @@
             }
           },
           "403": {
-            "description": "Key lacks the required scope or pack licence",
+            "description": "Key lacks the required scope or pack licence. For browser use: `secret_key_in_browser`, `origin_required`, `origin_not_allowed`, `not_available_to_publishable_keys`, `ai_notes_not_available`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1566,7 +1732,7 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded; see Retry-After",
+            "description": "Rate limit exceeded (`rate_limited`, see Retry-After) or the key's monthly cap is reached (`monthly_cap_reached`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1674,7 +1840,7 @@
             }
           },
           "403": {
-            "description": "Key lacks the required scope or pack licence",
+            "description": "Key lacks the required scope or pack licence. For browser use: `secret_key_in_browser`, `origin_required`, `origin_not_allowed`, `not_available_to_publishable_keys`, `ai_notes_not_available`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1694,7 +1860,7 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded; see Retry-After",
+            "description": "Rate limit exceeded (`rate_limited`, see Retry-After) or the key's monthly cap is reached (`monthly_cap_reached`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1775,7 +1941,7 @@
             }
           },
           "403": {
-            "description": "Key lacks the required scope or pack licence",
+            "description": "Key lacks the required scope or pack licence. For browser use: `secret_key_in_browser`, `origin_required`, `origin_not_allowed`, `not_available_to_publishable_keys`, `ai_notes_not_available`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1795,7 +1961,7 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded; see Retry-After",
+            "description": "Rate limit exceeded (`rate_limited`, see Retry-After) or the key's monthly cap is reached (`monthly_cap_reached`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1874,7 +2040,7 @@
             }
           },
           "403": {
-            "description": "Key lacks the required scope or pack licence",
+            "description": "Key lacks the required scope or pack licence. For browser use: `secret_key_in_browser`, `origin_required`, `origin_not_allowed`, `not_available_to_publishable_keys`, `ai_notes_not_available`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1894,7 +2060,7 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded; see Retry-After",
+            "description": "Rate limit exceeded (`rate_limited`, see Retry-After) or the key's monthly cap is reached (`monthly_cap_reached`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -2239,7 +2405,7 @@
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",
-        "description": "API key: `bk_live_…` or `bk_test_…`. Test keys run the same logic, are not billed, and responses carry `test_mode: true`."
+        "description": "API key: `bk_live_…` or `bk_test_…` (secret, server-side only) or `pk_live_…` / `pk_test_…` (publishable, for browser widgets on the key's allowed origins). Test keys run the same logic, are not billed, and responses carry `test_mode: true`."
       }
     },
     "schemas": {
@@ -3063,6 +3229,33 @@
               "string",
               "null"
             ]
+          },
+          "kind": {
+            "enum": [
+              "secret",
+              "publishable"
+            ]
+          },
+          "allowed_origins": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Publishable keys only"
+          },
+          "monthly_cap": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Most billable calls per calendar month, or null"
+          },
+          "public_key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The full key, for publishable keys only (they are public by design)"
           }
         }
       },

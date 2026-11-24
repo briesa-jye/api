@@ -17,6 +17,7 @@ const store: Store = prisma ? new PrismaStore(prisma) : new MemoryStore();
 const packsDir = resolve(import.meta.dirname, "../../../packs");
 const app = await buildApp({
   store, logger: true, packs: PackRegistry.fromDir(packsDir), packsDir,
+  clientIpHeader: process.env.CLIENT_IP_HEADER || undefined,
   ai: process.env.ANTHROPIC_API_KEY ? new AnthropicClient(process.env.ANTHROPIC_API_KEY) : undefined,
 });
 app.webhooks.start();

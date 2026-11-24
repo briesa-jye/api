@@ -2,7 +2,7 @@ import { ObligationSchema, RuleSchema } from "@briesa/engine";
 import { z } from "zod";
 import { WEBHOOK_EVENTS } from "@briesa/db";
 import { assessBody } from "./routes/assess.ts";
-import { createKeyBody } from "./routes/keys.ts";
+import { createKeyBody, updateKeyBody } from "./routes/keys.ts";
 import { createWebhookBody } from "./routes/webhooks.ts";
 
 type Obj = Record<string, unknown>;
@@ -46,7 +46,8 @@ const OPS: Op[] = [
   { method: "get", path: "/v1/audit/{request_id}", id: "getAudit", summary: "Get the stored audit record for a past call", scope: "audit:read", tag: "Audit", params: [idParam("request_id", "The request_id returned by the original call")], ok: json(ref("AuditRecord")), errors: ["404"] },
   { method: "get", path: "/v1/usage", id: "getUsage", summary: "Billable usage for a month", scope: "read", tag: "Usage", params: [q("month", "YYYY-MM, defaults to the current month")], ok: json({ type: "object", properties: { month: str, usage: { type: "array", items: ref("UsageRow") } }, required: ["month", "usage"] }), errors: ["400"] },
   { method: "get", path: "/v1/keys", id: "listKeys", summary: "List API keys", scope: "keys:manage", tag: "API keys", ok: json({ type: "object", properties: { keys: { type: "array", items: ref("ApiKey") } }, required: ["keys"] }) },
-  { method: "post", path: "/v1/keys", id: "createKey", summary: "Create an API key", description: "The plaintext key is returned once and cannot be retrieved again. A key can only grant scopes it holds itself.", scope: "keys:manage", tag: "API keys", body: js(createKeyBody, "CreateKey"), ok: json(ref("ApiKeyCreated"), "Created"), status: "201", errors: ["400", "403"] },
+  { method: "post", path: "/v1/keys", id: "createKey", summary: "Create an API key", description: "A secret key (the default) is returned once and cannot be retrieved again. Set `kind` to `publishable` for a key that is safe to put in a browser widget: it needs `allowed_origins`, can only hold `assess`, `read` and named `pack:<id>` scopes, can only run assessments and read pack details, and has a rate limit and a monthly cap (defaults 30 per minute; 500 test or 5,000 live calls a month). A key can only grant scopes it holds itself.", scope: "keys:manage", tag: "API keys", body: js(createKeyBody, "CreateKey"), ok: json(ref("ApiKeyCreated"), "Created"), status: "201", errors: ["400", "403"] },
+  { method: "patch", path: "/v1/keys/{id}", id: "updateKey", summary: "Change a key's settings", description: "Change the name, allowed origins, monthly cap or rate limit of an active key. Scopes, mode and kind cannot change: create a new key for that. A publishable key must keep a monthly cap.", scope: "keys:manage", tag: "API keys", params: [idParam("id", "Key id")], body: js(updateKeyBody, "UpdateKey"), ok: json(ref("ApiKey")), errors: ["400", "404"] },
   { method: "post", path: "/v1/keys/{id}/rotate", id: "rotateKey", summary: "Rotate a key", description: "Creates a replacement with the same scopes and mode and revokes the old key immediately.", scope: "keys:manage", tag: "API keys", params: [idParam("id", "Key id")], ok: json(ref("ApiKeyCreated"), "Created"), status: "201", errors: ["404"] },
   { method: "post", path: "/v1/keys/{id}/revoke", id: "revokeKey", summary: "Revoke a key", scope: "keys:manage", tag: "API keys", params: [idParam("id", "Key id")], ok: json(ref("ApiKey")), errors: ["404"] },
   { method: "get", path: "/v1/webhooks", id: "listWebhooks", summary: "List webhook endpoints", scope: "webhooks", tag: "Webhooks", ok: json({ type: "object", properties: { webhooks: { type: "array", items: ref("Webhook") } }, required: ["webhooks"] }) },
@@ -56,8 +57,8 @@ const OPS: Op[] = [
 ];
 
 const ERR_DESC: Record<string, string> = {
-  "400": "Invalid request (type `invalid_request_error`)", "401": "Missing, invalid or revoked API key", "402": "Live keys need an active subscription (test keys are free); code `subscription_required`", "403": "Key lacks the required scope or pack licence",
-  "404": "Not found. Packs you are not licensed for also return 404.", "409": "Idempotency-Key reused with a different request (`idempotency_key_reused`) or its first request is still running (`request_in_progress`, retry shortly)", "429": "Rate limit exceeded; see Retry-After",
+  "400": "Invalid request (type `invalid_request_error`)", "401": "Missing, invalid or revoked API key", "402": "Live keys need an active subscription (test keys are free); code `subscription_required`", "403": "Key lacks the required scope or pack licence. For browser use: `secret_key_in_browser`, `origin_required`, `origin_not_allowed`, `not_available_to_publishable_keys`, `ai_notes_not_available`",
+  "404": "Not found. Packs you are not licensed for also return 404.", "409": "Idempotency-Key reused with a different request (`idempotency_key_reused`) or its first request is still running (`request_in_progress`, retry shortly)", "429": "Rate limit exceeded (`rate_limited`, see Retry-After) or the key's monthly cap is reached (`monthly_cap_reached`)",
 };
 
 export const toOpenApiPath = (fastifyUrl: string) => fastifyUrl.replace(/:([A-Za-z_]+)/g, "{$1}");
@@ -110,7 +111,7 @@ export function buildOpenApi(): Obj {
       "pack.updated": webhookOp("pack.updated", "A pack was added, removed or its version/status changed", { type: "object", properties: { pack: str, change: { enum: ["added", "removed", "updated"] }, from: { type: ["object", "null"] }, to: { type: ["object", "null"] } } }),
     },
     components: {
-      securitySchemes: { bearerAuth: { type: "http", scheme: "bearer", description: "API key: `bk_live_…` or `bk_test_…`. Test keys run the same logic, are not billed, and responses carry `test_mode: true`." } },
+      securitySchemes: { bearerAuth: { type: "http", scheme: "bearer", description: "API key: `bk_live_…` or `bk_test_…` (secret, server-side only) or `pk_live_…` / `pk_test_…` (publishable, for browser widgets on the key's allowed origins). Test keys run the same logic, are not billed, and responses carry `test_mode: true`." } },
       schemas: {
         ErrorResponse: { type: "object", required: ["error"], properties: { error: { type: "object", required: ["type", "code", "message", "request_id"], properties: { type: { enum: ["invalid_request_error", "authentication_error", "permission_error", "not_found_error", "idempotency_error", "rate_limit_error", "api_error"] }, code: str, message: str, request_id: str } } } },
         Source: source,
@@ -131,7 +132,7 @@ export function buildOpenApi(): Obj {
         PackObligation: { allOf: [js(ObligationSchema, "Obligation"), { type: "object", properties: { pack: str, pack_status: str } }] },
         AuditRecord: { type: "object", properties: { request_id: str, endpoint: str, pack: { type: ["object", "null"], properties: { id: str, version: str } }, rule_versions: { type: ["object", "null"], additionalProperties: str }, inputs_hash: { type: "string", description: "SHA-256 of the canonical JSON inputs. Raw inputs are never stored." }, reference: strN, output: {}, model: strN, test: { type: "boolean" }, created_at: dt } },
         UsageRow: { type: "object", properties: { packId: strN, endpoint: str, test: { type: "boolean" }, count: { type: "integer" } } },
-        ApiKey: { type: "object", properties: { id: str, name: str, prefix: str, mode: { enum: ["test", "live"] }, scopes: { type: "array", items: str }, rate_limit_per_minute: { type: "integer" }, created_at: dt, revoked_at: { type: ["string", "null"] }, rotated_from: strN } },
+        ApiKey: { type: "object", properties: { id: str, name: str, prefix: str, mode: { enum: ["test", "live"] }, scopes: { type: "array", items: str }, rate_limit_per_minute: { type: "integer" }, created_at: dt, revoked_at: { type: ["string", "null"] }, rotated_from: strN, kind: { enum: ["secret", "publishable"] }, allowed_origins: { type: "array", items: str, description: "Publishable keys only" }, monthly_cap: { type: ["integer", "null"], description: "Most billable calls per calendar month, or null" }, public_key: { type: ["string", "null"], description: "The full key, for publishable keys only (they are public by design)" } } },
         ApiKeyCreated: { allOf: [ref("ApiKey"), { type: "object", required: ["key"], properties: { key: { type: "string", description: "Shown once" } } }] },
         Webhook: { type: "object", properties: { id: str, url: str, events: { type: "array", items: { enum: [...WEBHOOK_EVENTS] } }, packs: { type: "array", items: str }, created_at: dt } },
         WebhookCreated: { allOf: [ref("Webhook"), { type: "object", required: ["secret"], properties: { secret: { type: "string", description: "Signing secret, shown once" } } }] },

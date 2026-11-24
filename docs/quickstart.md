@@ -116,6 +116,30 @@ export function verify(secret: string, rawBody: string, header: string, toleranc
 
 Respond `2xx` within 10 seconds. Failed deliveries are retried after 1 minute, 5 minutes, 30 minutes, 2 hours and 12 hours (6 attempts in total); `GET /v1/webhooks/{id}/deliveries` shows the log. Webhook URLs must be `https` and publicly reachable, and redirects are not followed. Events never contain raw assessment inputs.
 
+## 6. Use the API from a web page
+
+Never put a secret key (`bk_...`) in a web page, an app or a public repository: anyone who opens the page can copy it. Requests that carry an `Origin` header (that is, every request from a browser) are refused for secret keys with `secret_key_in_browser`.
+
+For a widget, create a **publishable key** (`pk_test_...` or `pk_live_...`) in the dashboard under API keys, or with `POST /v1/keys` and `"kind": "publishable"`. It is safe to put in a page because it is deliberately limited:
+
+- It only works from the sites you list in `allowed_origins`: `https://www.example.com`, or `https://*.example.com` for subdomains. A request from any other site gets `origin_not_allowed`, and a request with no `Origin` gets `origin_required`. (Test keys may also list `http://localhost:3000`.)
+- It can only hold the `assess`, `read` and named `pack:<id>` scopes, never a wildcard, and can only reach `POST /v1/assess`, `GET /v1/packs` and `GET /v1/packs/{id}` (the questions for a pack). Everything else returns `not_available_to_publishable_keys`.
+- It cannot request `options.ai_notes` (`ai_notes_not_available`), because each one costs a model call. Ask for those from your server.
+- It has a monthly cap on billable calls (default 500 for test keys, 5,000 for live keys), after which calls return `429` with `monthly_cap_reached`, and a rate limit that is also split per visitor, so one visitor cannot use up the whole allowance.
+
+The API sends the CORS headers a browser needs, so `fetch` works with no proxy:
+
+```js
+const res = await fetch("https://briesa-api.fly.dev/v1/assess", {
+  method: "POST",
+  headers: { Authorization: "Bearer pk_live_...", "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
+  body: JSON.stringify({ pack: "whs-incident-notification", scenario_type: "classify_incident", jurisdiction: "NSW", inputs: { incident_type: "death", arose_from_work: true } }),
+});
+const assessment = await res.json();
+```
+
+A publishable key is not a secret, but treat the results with the same care as any decision support: show the pack's `status` and the `human_review_recommended` notice, and never present a result as a guarantee of compliance. Assessments never store the raw inputs, only a hash.
+
 ## Next
 
 - Full reference: [reference.md](reference.md) and [openapi.json](openapi.json) (also served at `/v1/openapi.json`)

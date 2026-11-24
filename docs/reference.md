@@ -180,7 +180,7 @@ Responses: `200`, `401`, `402`, `403`, `429`
 
 **Create an API key**
 
-The plaintext key is returned once and cannot be retrieved again. A key can only grant scopes it holds itself.
+A secret key (the default) is returned once and cannot be retrieved again. Set `kind` to `publishable` for a key that is safe to put in a browser widget: it needs `allowed_origins`, can only hold `assess`, `read` and named `pack:<id>` scopes, can only run assessments and read pack details, and has a rate limit and a monthly cap (defaults 30 per minute; 500 test or 5,000 live calls a month). A key can only grant scopes it holds itself.
 
 Required scope: `keys:manage`
 
@@ -192,8 +192,34 @@ Request body:
 | `mode` | `test` \| `live` | yes |  |
 | `scopes` | array | yes |  |
 | `rate_limit_per_minute` | integer | no |  |
+| `kind` | `secret` \| `publishable` | no |  |
+| `allowed_origins` | array | no |  |
+| `monthly_cap` | integer | no |  |
 
 Responses: `201`, `400`, `401`, `402`, `403`, `429`
+
+### `PATCH /v1/keys/{id}`
+
+**Change a key's settings**
+
+Change the name, allowed origins, monthly cap or rate limit of an active key. Scopes, mode and kind cannot change: create a new key for that. A publishable key must keep a monthly cap.
+
+Required scope: `keys:manage`
+
+| Parameter | In | Required | Description |
+|---|---|---|---|
+| `id` | path | yes | Key id |
+
+Request body:
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` | string | no |  |
+| `allowed_origins` | array | no |  |
+| `monthly_cap` | any | no |  |
+| `rate_limit_per_minute` | integer | no |  |
+
+Responses: `200`, `400`, `401`, `402`, `403`, `404`, `429`
 
 ### `POST /v1/keys/{id}/rotate`
 

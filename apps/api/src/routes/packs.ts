@@ -21,9 +21,9 @@ function accessiblePack(req: FastifyRequest, reg: PackRegistry, id: string): Pac
 export const packRoutes: FastifyPluginAsync<{ packs: PackRegistry }> = async (app, { packs }) => {
   const visible = (req: FastifyRequest) => packs.list().filter((p) => hasPackAccess(req.scopes, p.manifest.id));
 
-  app.get("/v1/packs", { config: { scope: "read" } }, async (req) => ({ packs: visible(req).map(summary) }));
+  app.get("/v1/packs", { config: { scope: "read", publishable: true } }, async (req) => ({ packs: visible(req).map(summary) }));
 
-  app.get("/v1/packs/:id", { config: { scope: "read" } }, async (req) => {
+  app.get("/v1/packs/:id", { config: { scope: "read", publishable: true } }, async (req) => {
     const p = accessiblePack(req, packs, (req.params as { id: string }).id);
     return {
       ...summary(p),

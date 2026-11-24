@@ -7,6 +7,7 @@ primary_region = "syd"
 
 [env]
   NODE_ENV = "production"
+  CLIENT_IP_HEADER = "fly-client-ip"
   PORT = "3000"
 
 [http_service]

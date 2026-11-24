@@ -32,12 +32,15 @@ const stable = (v: unknown): string =>
   : JSON.stringify(v) ?? "null";
 
 export const assessRoutes: FastifyPluginAsync<{ packs: PackRegistry; store: Store; webhooks: WebhookService; ai?: AiClient }> = async (app, { packs, store, webhooks, ai }) => {
-  app.post("/v1/assess", { config: { scope: "assess", billable: "assess" } }, async (req) => {
+  app.post("/v1/assess", { config: { scope: "assess", billable: "assess", publishable: true } }, async (req) => {
     const parsed = assessBody.safeParse(req.body);
     if (!parsed.success) {
       throw new ApiError("invalid_request_error", "invalid_body", parsed.error.issues.map((i) => `${i.path.join(".") || "(body)"}: ${i.message}`).join("; "));
     }
     const b = parsed.data;
+    if (req.auth!.kind === "publishable" && b.options?.ai_notes) {
+      throw new ApiError("permission_error", "ai_notes_not_available", "AI-assisted notes are not available to publishable keys. Request them from your server with a secret key.");
+    }
     const pack = packs.get(b.pack);
     if (!pack || !hasPackAccess(req.scopes, b.pack)) {
       throw new ApiError("not_found_error", "pack_not_found", "No such pack.");

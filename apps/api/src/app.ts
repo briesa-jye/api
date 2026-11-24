@@ -3,7 +3,7 @@ import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 import type { ApiKeyRecord, Store } from "@briesa/db";
 import { ApiError, errorBody } from "./errors.ts";
 import { effectiveScopes, liveAccessAllowed } from "@briesa/accounts/billing";
-import { hasScope, hashKey, hashesEqual, parseKey } from "./keys.ts";
+import { hasScope, hashKey, hashesEqual, originAllowed, parseKey, PUBLISHABLE_SCOPE } from "./keys.ts";
 import { MemoryRateLimiter, type RateLimiter } from "./ratelimit.ts";
 import { monthOf } from "./month.ts";
 import { diffRegistries, PackRegistry } from "@briesa/packs";
@@ -23,6 +23,8 @@ export interface RouteConfig {
   billable?: string;
   /** POST routes are idempotent by default; set false to opt out (e.g. responses containing secrets). */
   idempotent?: boolean;
+  /** Reachable with a publishable key from a browser widget. Everything else is secret-key only. */
+  publishable?: boolean;
 }
 
 declare module "fastify" {
@@ -50,6 +52,11 @@ export interface AppOptions {
   /** Optional model client for AI-assisted notes. Without it, ai_notes requests return ai_status "unavailable". */
   ai?: AiClient;
   logger?: boolean;
+  /**
+   * Name of a request header that your proxy sets to the real client IP and that clients cannot forge (Fly.io: "fly-client-ip").
+   * Used to rate-limit each visitor of a publishable key separately. Without it, the connection's address is used.
+   */
+  clientIpHeader?: string;
 }
 
 declare module "fastify" {
@@ -84,6 +91,24 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
       : false,
   });
 
+  // Billable calls this process has seen per capped key this month, seeded from the database on first use.
+  const usageCount = new Map<string, { month: string; count: number }>();
+  const currentUsage = async (rec: ApiKeyRecord) => {
+    const month = monthOf();
+    const hit = usageCount.get(rec.id);
+    if (hit && hit.month === month) return hit;
+    const fresh = { month, count: await store.countKeyUsage(rec.tenantId, rec.id, month) };
+    usageCount.set(rec.id, fresh);
+    return fresh;
+  };
+
+  const CORS_EXPOSE = "x-request-id, x-ratelimit-limit, x-ratelimit-remaining, retry-after, idempotent-replayed, x-briesa-mode";
+  const allowCors = (reply: { header(k: string, v: string): unknown }, origin: string) => {
+    reply.header("access-control-allow-origin", origin);
+    reply.header("vary", "origin");
+    reply.header("access-control-expose-headers", CORS_EXPOSE);
+  };
+
   const routeTable: { method: string; path: string; scope: string | null }[] = [];
   app.decorate("routeTable", routeTable);
   app.addHook("onRoute", (r) => {
@@ -101,8 +126,23 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
 
   app.addHook("onRequest", async (req, reply) => {
     reply.header("x-request-id", req.id);
+    const origin = typeof req.headers.origin === "string" ? req.headers.origin : undefined;
+
+    // CORS preflight. It carries no key, so it only says what a browser may attempt. Whether the response can be read is decided on the
+    // real request: publishable keys on an allowed origin get the CORS headers back, secret keys never do.
+    if (req.method === "OPTIONS") {
+      if (origin) { reply.header("access-control-allow-origin", origin); reply.header("vary", "origin"); }
+      reply.header("access-control-allow-methods", "GET, POST, OPTIONS");
+      reply.header("access-control-allow-headers", "authorization, content-type, idempotency-key");
+      reply.header("access-control-max-age", "600");
+      return reply.code(204).send();
+    }
+
     const cfg = req.routeOptions.config;
-    if (!cfg?.scope) return;
+    if (!cfg?.scope) {
+      if (origin && req.method === "GET") reply.header("access-control-allow-origin", "*"); // public, read-only routes
+      return;
+    }
 
     const header = req.headers.authorization;
     const token = header?.startsWith("Bearer ") ? header.slice(7).trim() : "";
@@ -112,21 +152,47 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
     const rec = await store.findApiKeyByPrefix(parsed.prefix);
     // Compare against a dummy hash when the prefix is unknown so timing doesn't reveal existence.
     const ok = hashesEqual(hashKey(token), rec?.hash ?? "0".repeat(64)) && rec !== null;
-    if (!ok || !rec || rec.mode !== parsed.mode) {
+    if (!ok || !rec || rec.mode !== parsed.mode || rec.kind !== parsed.kind) {
       throw new ApiError("authentication_error", "invalid_api_key", "Missing or invalid API key.");
     }
     if (rec.revokedAt) throw new ApiError("authentication_error", "api_key_revoked", "This API key has been revoked.");
+
+    // Browser rules. A request with an Origin header comes from a web page.
+    if (rec.kind === "secret" && origin) {
+      throw new ApiError("permission_error", "secret_key_in_browser", "Secret keys must never be used from a browser. Use a publishable key (pk_...) in a widget, and keep secret keys on your server.");
+    }
+    if (rec.kind === "publishable") {
+      if (!origin) throw new ApiError("permission_error", "origin_required", "Publishable keys can only be used from a web page on one of the key's allowed origins.");
+      if (!originAllowed(rec.allowedOrigins, origin)) throw new ApiError("permission_error", "origin_not_allowed", "This origin is not allowed for this publishable key. Add it to the key's allowed origins in the dashboard.");
+      allowCors(reply, origin); // from here on the page can read the response, including errors
+      if (!cfg.publishable) throw new ApiError("permission_error", "not_available_to_publishable_keys", "Publishable keys can only run assessments and read pack details.");
+    }
     // Billing and plan licensing. Tenant is cached briefly so subscription changes apply within seconds.
     const tenant = await getTenant(rec.tenantId);
     if (!tenant) throw new ApiError("authentication_error", "invalid_api_key", "Missing or invalid API key.");
     if (rec.mode === "live" && !liveAccessAllowed(tenant)) {
       throw new ApiError("permission_error", "subscription_required", "This tenant has no active subscription. Live keys need one; test keys are free.", 402);
     }
-    const scopes = effectiveScopes(rec.scopes, tenant, rec.mode);
+    const allScopes = effectiveScopes(rec.scopes, tenant, rec.mode);
+    // Whatever the stored scopes say, a publishable key never holds more than assess, read and named packs.
+    const scopes = rec.kind === "publishable" ? allScopes.filter((s) => PUBLISHABLE_SCOPE.test(s)) : allScopes;
     if (!hasScope(scopes, cfg.scope)) {
       throw new ApiError("permission_error", "missing_scope", `This key lacks the '${cfg.scope}' scope.`);
     }
 
+    if (rec.monthlyCap !== null && cfg.billable && (await currentUsage(rec)).count >= rec.monthlyCap) {
+      throw new ApiError("rate_limit_error", "monthly_cap_reached", `This key reached its monthly limit of ${rec.monthlyCap} calls. Raise the cap in the dashboard, or wait for next month.`);
+    }
+
+    // A publishable key is shared by every visitor of a site, so each visitor also gets a slice of it and cannot use it all up.
+    if (rec.kind === "publishable") {
+      const ip = (opts.clientIpHeader ? String(req.headers[opts.clientIpHeader] ?? "") : "") || req.ip;
+      const slice = limiter.hit(`${rec.id}:ip:${ip}`, Math.max(5, Math.ceil(rec.rateLimitPerMinute / 3)));
+      if (slice.remaining < 0) {
+        reply.header("retry-after", Math.ceil(slice.resetMs / 1000));
+        throw new ApiError("rate_limit_error", "rate_limited", "Too many requests from this visitor. Please wait a moment.");
+      }
+    }
     const rl = limiter.hit(rec.id, rec.rateLimitPerMinute);
     reply.header("x-ratelimit-limit", rec.rateLimitPerMinute);
     reply.header("x-ratelimit-remaining", Math.max(0, rl.remaining));
@@ -182,10 +248,12 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
     const billable = req.routeOptions.config?.billable;
     // An idempotent replay returns a stored response without running the handler: it is not a new billable event.
     if (!billable || !req.auth || reply.statusCode >= 400 || reply.getHeader("idempotent-replayed")) return;
+    const seen = req.auth.monthlyCap !== null ? await currentUsage(req.auth) : null; // read before recording so the first count is not doubled
     await store.recordUsage({
       tenantId: req.auth.tenantId, keyId: req.auth.id, packId: req.packId ?? null,
       endpoint: billable, test: req.auth.mode === "test", month: monthOf(),
     });
+    if (seen) seen.count++;
   });
 
   app.setErrorHandler((err: unknown, req: FastifyRequest, reply) => {
