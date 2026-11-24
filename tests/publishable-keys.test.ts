@@ -92,13 +92,15 @@ describe("a widget on an allowed origin", () => {
     expect((await call(key, { method: "GET", url: "/v1/packs" })).json().packs.map((p: { id: string }) => p.id)).toEqual(["widgets"]);
   });
 
-  it("is refused from any other origin, and the refusal is not readable by that page", async () => {
+  it("is refused from any other origin; the refusal is readable so a site owner sees why, and nothing else is exposed", async () => {
     const { pk, call } = await boot();
     const { key } = await pk();
     const r = await call(key, { origin: "https://evil.example.net" });
     expect(r.statusCode).toBe(403);
     expect(r.json().error.code).toBe("origin_not_allowed");
-    expect(r.headers["access-control-allow-origin"]).toBeUndefined();
+    expect(r.headers["access-control-allow-origin"]).toBe("https://evil.example.net");
+    expect(r.json()).not.toHaveProperty("outcome"); // no assessment data, only the refusal
+    expect(JSON.stringify(r.json())).not.toContain(SITE); // and it does not reveal which sites the key allows
   });
 
   it("is refused without an Origin header: a publishable key is for web pages", async () => {

@@ -163,7 +163,11 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
     }
     if (rec.kind === "publishable") {
       if (!origin) throw new ApiError("permission_error", "origin_required", "Publishable keys can only be used from a web page on one of the key's allowed origins.");
-      if (!originAllowed(rec.allowedOrigins, origin)) throw new ApiError("permission_error", "origin_not_allowed", "This origin is not allowed for this publishable key. Add it to the key's allowed origins in the dashboard.");
+      if (!originAllowed(rec.allowedOrigins, origin)) {
+        // Readable on purpose: a site owner who forgot to list their site needs to see why. It reveals nothing the caller does not already hold.
+        allowCors(reply, origin);
+        throw new ApiError("permission_error", "origin_not_allowed", "This origin is not allowed for this publishable key. Add it to the key's allowed origins in the dashboard.");
+      }
       allowCors(reply, origin); // from here on the page can read the response, including errors
       if (!cfg.publishable) throw new ApiError("permission_error", "not_available_to_publishable_keys", "Publishable keys can only run assessments and read pack details.");
     }
