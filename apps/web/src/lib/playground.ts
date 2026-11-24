@@ -20,6 +20,7 @@ export function playgroundCatalog(): LivePack[] {
       description: cfg.description,
       outcome: cfg.outcome,
       fields: flattenSchema(p.inputSchemas[id]),
+      inputSchema: p.inputSchemas[id],
       examples: p.scenarios.filter((s) => s.scenario_type === id).map((s) => ({ id: s.id, jurisdiction: s.jurisdiction, inputs: s.inputs, expectOutcome: s.expect.outcome })),
     })),
   }));

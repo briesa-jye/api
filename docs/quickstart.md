@@ -143,5 +143,6 @@ A publishable key is not a secret, but treat the results with the same care as a
 ## Next
 
 - Full reference: [reference.md](reference.md) and [openapi.json](openapi.json) (also served at `/v1/openapi.json`)
+- Widgets for your own site: [widgets.md](widgets.md)
 - Versioning and deprecation: [versioning.md](versioning.md)
 - Adding or changing rules: [pack-authoring.md](pack-authoring.md)

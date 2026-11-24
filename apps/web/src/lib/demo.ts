@@ -8,6 +8,7 @@ import { getRegistry } from "@/lib/packs";
 export async function seedDemo(store: Store, tenantId: string) {
   const actor = { tenantId, scopes: ["*"] };
   await createKey(store, actor, { name: "Local development", mode: "test", scopes: ["assess", "read", "audit:read", "pack:*"] });
+  await createKey(store, actor, { name: "Marketing site widget", mode: "test", kind: "publishable", scopes: ["assess", "read", "pack:whs-incident-notification", "pack:real-estate-aml"], allowed_origins: ["https://www.example.com", "http://localhost:4010"] });
   await createKey(store, actor, { name: "CI smoke tests", mode: "test", scopes: ["assess", "read", "pack:whs-incident-notification"] });
   const { endpoint } = await createWebhook(store, actor, { url: "https://hooks.example.com/briesa", events: ["rules.updated", "pack.updated"], packs: ["*"] }, () => true);
   const month = new Date().toISOString().slice(0, 7);

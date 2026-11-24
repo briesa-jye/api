@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, CreditCard, FlaskConical, KeyRound, LayoutDashboard, ScrollText, Webhook } from "lucide-react";
+import { BarChart3, CreditCard, FlaskConical, KeyRound, LayoutDashboard, PanelsTopLeft, ScrollText, Webhook } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,7 @@ const ITEMS = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Playground", href: "/dashboard/playground", icon: FlaskConical },
   { label: "API keys", href: "/dashboard/keys", icon: KeyRound },
+  { label: "Widgets", href: "/dashboard/widgets", icon: PanelsTopLeft },
   { label: "Webhooks", href: "/dashboard/webhooks", icon: Webhook },
   { label: "Usage", href: "/dashboard/usage", icon: BarChart3 },
   { label: "Audit", href: "/dashboard/audit", icon: ScrollText },

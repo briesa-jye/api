@@ -6,7 +6,11 @@ import { humanize } from "./text.ts";
 // Everything here is pure and browser-safe. It runs the same assessCore the API runs, so the playground cannot drift from it.
 
 export interface LiveExample { id: string; jurisdiction: string; inputs: Record<string, unknown>; expectOutcome: string }
-export interface LiveScenario { id: string; description: string; outcome: OutcomeConfig; fields: Field[]; examples: LiveExample[] }
+export interface LiveScenario {
+  id: string; description: string; outcome: OutcomeConfig; fields: Field[]; examples: LiveExample[];
+  /** The scenario's JSON Schema, as GET /v1/packs/{id} serves it. The widget builder previews with it. */
+  inputSchema?: object;
+}
 export interface LivePack {
   id: string; name: string; status: "draft" | "beta" | "verified"; version: string; jurisdictions: string[];
   rules: Rule[]; scenarios: LiveScenario[];
