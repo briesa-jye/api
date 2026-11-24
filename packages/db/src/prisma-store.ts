@@ -39,6 +39,10 @@ export class PrismaStore implements Store {
     }
     return n;
   }
+  /** Drops rate-limit windows over an hour old. Only call when RATE_LIMIT_STORE=database (the table needs migration 0007). */
+  async purgeRateWindows(now: Date) {
+    return (await this.db.rateWindow.deleteMany({ where: { windowStart: { lt: new Date(now.getTime() - 3_600_000) } } })).count;
+  }
   async hitRateWindow(key: string, windowStart: Date) {
     const rows = await this.db.$queryRaw<{ count: number }[]>`INSERT INTO "RateWindow" ("key", "windowStart", "count")
       VALUES (${key}, ${utc(windowStart)}, 1)
@@ -106,7 +110,6 @@ export class PrismaStore implements Store {
         WHERE a."tenantId" = t.id AND a."createdAt" < ${utc(now)} - (t."retentionDays" * interval '1 day')`;
       const idempotency = (await tx.idempotencyRecord.deleteMany({ where: { createdAt: { lt: new Date(now.getTime() - IDEMPOTENCY_TTL_MS) } } })).count;
       const deliveries = (await tx.webhookDelivery.deleteMany({ where: { status: { not: "pending" }, createdAt: { lt: new Date(now.getTime() - FINISHED_DELIVERY_TTL_MS) } } })).count;
-      await tx.rateWindow.deleteMany({ where: { windowStart: { lt: new Date(now.getTime() - 3_600_000) } } });
       return { audit, idempotency, deliveries };
     });
   }

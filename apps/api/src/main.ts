@@ -35,7 +35,10 @@ if (prismaStore && secretKey) {
   if (n) app.log.info({ count: n }, "encrypted existing webhook secrets");
 }
 app.webhooks.start();
-if (prisma) startRetentionJob(store, app.log);
+if (prisma) {
+  const sharedLimiter = process.env.RATE_LIMIT_STORE === "database";
+  startRetentionJob(store, app.log, undefined, sharedLimiter ? () => prismaStore!.purgeRateWindows(new Date()) : undefined);
+}
 process.on("SIGHUP", () =>
   app.reloadPacks().then((r) => app.log.info(r, "packs reloaded"))
     .catch((e) => app.log.error({ err: { name: e.name } }, "pack reload failed; keeping old packs")));

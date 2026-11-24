@@ -153,3 +153,12 @@ describe("test-key cap", () => {
     expect(await run("test", 3)).toEqual([200, 200, 200, 429]);
   });
 });
+
+describe("retention without the rate-window table", () => {
+  it("purgeExpired never touches RateWindow (production may not have migration 0007)", async () => {
+    const { store, client, close } = await makePrismaStore();
+    await client.$executeRawUnsafe('DROP TABLE "RateWindow"');
+    await expect(store.purgeExpired(new Date())).resolves.toBeDefined();
+    await close();
+  });
+});
