@@ -25,6 +25,7 @@ export class PrismaStore implements Store {
   private db: PrismaClient;
   constructor(db: PrismaClient) { this.db = db; }
   disconnect() { return this.db.$disconnect(); }
+  async ping() { await this.db.$queryRaw`SELECT 1`; }
 
   // --- tenants
   async createTenant(input: { name: string; retentionDays?: number; billingExempt?: boolean }): Promise<Tenant> {

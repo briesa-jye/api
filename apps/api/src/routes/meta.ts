@@ -6,6 +6,22 @@ import { monthOf } from "../month.ts";
 export const metaRoutes: FastifyPluginAsync<{ store: Store }> = async (app, { store }) => {
   app.get("/health", async () => ({ ok: true }));
 
+  // Readiness: 200 only while the database answers within 2 s. /health stays process-only so a database blip never restarts the machine.
+  app.get("/ready", async (_req, reply) => {
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      await Promise.race([
+        store.ping(),
+        new Promise((_, rej) => { timer = setTimeout(() => rej(new Error("timeout")), 2000); }),
+      ]);
+      return { ok: true };
+    } catch {
+      return reply.code(503).send({ ok: false, error: "database_unavailable" });
+    } finally {
+      clearTimeout(timer);
+    }
+  });
+
   app.get("/v1/usage", { config: { scope: "read" } }, async (req) => {
     const month = (req.query as { month?: string }).month ?? monthOf();
     if (!/^\d{4}-\d{2}$/.test(month)) {

@@ -180,6 +180,8 @@ export interface WebhookDelivery {
  * The only global lookup is findApiKeyByPrefix, needed to authenticate.
  */
 export interface Store {
+  /** Resolves when the database answers; rejects when it does not. Used by /ready. */
+  ping(): Promise<void>;
   createTenant(input: { name: string; retentionDays?: number; billingExempt?: boolean }): Promise<Tenant>;
   updateTenantBilling(tenantId: string, patch: TenantBillingPatch): Promise<boolean>;
   /** System lookups used by the dashboard and the Stripe webhook. */

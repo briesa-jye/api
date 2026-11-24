@@ -82,6 +82,38 @@
         }
       }
     },
+    "/ready": {
+      "get": {
+        "operationId": "ready",
+        "summary": "Readiness check",
+        "description": "200 while the database answers within 2 seconds, otherwise 503. Use for load balancers and uptime monitors; `/health` only says the process is up.",
+        "tags": [
+          "Meta"
+        ],
+        "security": [],
+        "x-required-scope": null,
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/openapi.json": {
       "get": {
         "operationId": "getOpenApi",

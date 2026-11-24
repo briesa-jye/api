@@ -35,6 +35,7 @@ interface Op { method: string; path: string; id: string; summary: string; descri
 
 const OPS: Op[] = [
   { method: "get", path: "/health", id: "health", summary: "Health check", tag: "Meta", ok: json({ type: "object", properties: { ok: { type: "boolean" } }, required: ["ok"] }) },
+  { method: "get", path: "/ready", id: "ready", summary: "Readiness check", description: "200 while the database answers within 2 seconds, otherwise 503. Use for load balancers and uptime monitors; `/health` only says the process is up.", tag: "Meta", ok: json({ type: "object", properties: { ok: { type: "boolean" } }, required: ["ok"] }) },
   { method: "get", path: "/v1/openapi.json", id: "getOpenApi", summary: "This OpenAPI document", tag: "Meta", ok: json({ type: "object" }) },
   { method: "get", path: "/v1/packs", id: "listPacks", summary: "List packs available to your key", scope: "read", tag: "Packs", ok: json({ type: "object", properties: { packs: { type: "array", items: ref("Pack") } }, required: ["packs"] }) },
   { method: "get", path: "/v1/packs/{id}", id: "getPack", summary: "Get a pack with its scenario types and input schemas", scope: "read", tag: "Packs", params: [idParam("id", "Pack id")], ok: json(ref("PackDetail")), errors: ["404"] },

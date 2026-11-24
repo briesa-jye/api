@@ -16,6 +16,16 @@ Public (no key needed).
 
 Responses: `200`
 
+### `GET /ready`
+
+**Readiness check**
+
+200 while the database answers within 2 seconds, otherwise 503. Use for load balancers and uptime monitors; `/health` only says the process is up.
+
+Public (no key needed).
+
+Responses: `200`
+
 ### `GET /v1/openapi.json`
 
 **This OpenAPI document**

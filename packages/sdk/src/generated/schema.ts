@@ -19,6 +19,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Readiness check
+         * @description 200 while the database answers within 2 seconds, otherwise 503. Use for load balancers and uptime monitors; `/health` only says the process is up.
+         */
+        get: operations["ready"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/openapi.json": {
         parameters: {
             query?: never;
@@ -655,6 +675,28 @@ export interface components {
 export type $defs = Record<string, never>;
 export interface operations {
     health: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ok: boolean;
+                    };
+                };
+            };
+        };
+    };
+    ready: {
         parameters: {
             query?: never;
             header?: never;

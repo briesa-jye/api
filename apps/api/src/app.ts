@@ -57,6 +57,10 @@ export interface AppOptions {
    * Used to rate-limit each visitor of a publishable key separately. Without it, the connection's address is used.
    */
   clientIpHeader?: string;
+  /** Largest accepted request body in bytes (default 256 KiB). */
+  bodyLimit?: number;
+  /** How long a request may take to arrive in full (default 30 s). */
+  requestTimeoutMs?: number;
 }
 
 declare module "fastify" {
@@ -86,6 +90,9 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
   const app = Fastify({
     // Request IDs are server-generated; bodies and headers are never logged.
     genReqId: () => `req_${randomBytes(12).toString("hex")}`,
+    // Real requests are a few KB; refuse anything over 256 KiB, and drop requests that take over 30 s to arrive.
+    bodyLimit: opts.bodyLimit ?? 256 * 1024,
+    requestTimeout: opts.requestTimeoutMs ?? 30_000,
     logger: opts.logger
       ? { level: "info", redact: ["req.headers.authorization", "req.headers.cookie"] }
       : false,
@@ -264,7 +271,10 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
     if (err instanceof ApiError) {
       return reply.code(err.status).send(errorBody(err, req.id));
     }
-    const e = err as { statusCode?: number; validation?: unknown; message?: string };
+    const e = err as { statusCode?: number; validation?: unknown; message?: string; code?: string };
+    if (e.code === "FST_ERR_CTP_BODY_TOO_LARGE") {
+      return reply.code(413).send(errorBody({ type: "invalid_request_error", code: "payload_too_large", message: "The request body is too large." }, req.id));
+    }
     if (e.validation || (e.statusCode && e.statusCode < 500)) {
       return reply.code(e.statusCode ?? 400).send(
         errorBody({ type: "invalid_request_error", code: "invalid_request", message: e.message ?? "Invalid request." }, req.id),

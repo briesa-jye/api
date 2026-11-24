@@ -104,6 +104,7 @@ export class MemoryStore implements Store {
     if (patch.rateLimitPerMinute !== undefined) k.rateLimitPerMinute = patch.rateLimitPerMinute;
     return { ...k, allowedOrigins: [...k.allowedOrigins] };
   }
+  async ping() {}
   async countKeyUsage(tenantId: string, keyId: string, month: string) {
     return this.usage.filter((e) => e.tenantId === tenantId && e.keyId === keyId && e.month === month).length;
   }
