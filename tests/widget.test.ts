@@ -63,7 +63,10 @@ describe("config handling", () => {
       extra: "dropped",
     });
     expect(c.jurisdictions).toEqual(["NSW", "WA"]);
-    expect(c.theme).toEqual({ accent: "#5170ff", mode: "auto", radius: "md" }); // an unsafe colour never reaches the stylesheet
+    expect(c.theme).toEqual({
+      accent: "#5170ff", mode: "auto", radius: "md", font: "system", size: "md", density: "comfortable", surface: "card",
+      field: "filled", button: "solid", buttonWidth: "auto", width: "medium", background: "", text: "",
+    }); // an unsafe colour never reaches the stylesheet
     expect(c.copy.title).toHaveLength(120);
     expect(c.copy.submit).toBe("Check");
     expect(c.copy.brand).toBe(true);
@@ -259,6 +262,34 @@ describe("the widget in a page", () => {
     expect(w.classList.contains("dark")).toBe(true);
     expect(w.style.getPropertyValue("--bw-accent")).toBe("#ff0066");
     expect(w.style.getPropertyValue("--bw-radius")).toBe("16px");
+  });
+
+  it("applies appearance choices as attributes, never as free text, and falls back on anything unknown", async () => {
+    W.mount(host, { ...CFG, theme: { font: "serif", size: "lg", density: "compact", surface: "raised", field: "underline", button: "soft", buttonWidth: "full", width: "narrow" } }, { transport: fakeApi() });
+    await tick();
+    const w = q(".w")!;
+    expect(["font", "size", "density", "surface", "field", "button", "buttonwidth", "width"].map((k) => w.getAttribute("data-" + k)))
+      .toEqual(["serif", "lg", "compact", "raised", "underline", "soft", "full", "narrow"]);
+    const bad = W.sanitizeConfig({ theme: { font: "Comic; x:y", size: "huge", surface: "<b>", background: "url(//evil)", text: "red" } }).theme;
+    expect([bad.font, bad.size, bad.surface, bad.background, bad.text]).toEqual(["system", "md", "card", "", ""]);
+  });
+
+  it("custom colours: a background alone gets readable text, and the button text reads on the accent", async () => {
+    expect(W.readableOn("#ffffff")).toBe("#14141a");
+    expect(W.readableOn("#000")).toBe("#ffffff");
+    expect(W.readableOn("#ffe08a")).toBe("#14141a"); // a light accent gets dark button text
+    expect(W.readableOn("#5170ff")).toBe("#ffffff");
+    W.mount(host, { ...CFG, theme: { background: "#101820", accent: "#ffe08a" } }, { transport: fakeApi() });
+    await tick();
+    const w = q(".w")!;
+    expect(w.classList.contains("custom")).toBe(true);
+    expect(w.style.getPropertyValue("--bg")).toBe("#101820");
+    expect(w.style.getPropertyValue("--fg")).toBe("#ffffff");
+    expect(w.style.getPropertyValue("--on-accent")).toBe("#14141a");
+    W.mount(host, { ...CFG, theme: { text: "#222222" } }, { transport: fakeApi() });
+    await tick();
+    expect(q(".w")!.style.getPropertyValue("--fg")).toBe("#222222");
+    expect(q(".w")!.style.getPropertyValue("--bg")).toBe("");
   });
 
   it("works for the real-estate pack's nested questions too", async () => {

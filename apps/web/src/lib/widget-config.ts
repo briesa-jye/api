@@ -11,17 +11,50 @@ export interface WidgetState {
   /** Empty means every jurisdiction the pack covers. */
   jurisdictions: string[];
   questions: Record<string, QuestionState>;
-  theme: { accent: string; mode: "auto" | "light" | "dark"; radius: "none" | "sm" | "md" | "lg" };
+  theme: Theme;
   copy: { title: string; intro: string; submit: string; brand: boolean; schemaHelp: boolean };
   result: { actions: boolean; reasons: boolean };
 }
+
+export interface Theme {
+  accent: string;
+  mode: "auto" | "light" | "dark";
+  radius: "none" | "sm" | "md" | "lg";
+  font: "system" | "serif" | "rounded" | "mono";
+  size: "sm" | "md" | "lg";
+  density: "compact" | "comfortable" | "spacious";
+  surface: "card" | "flat" | "raised";
+  field: "filled" | "outline" | "underline";
+  button: "solid" | "outline" | "soft";
+  /** The submit button spans the whole width. */
+  buttonFull: boolean;
+  width: "narrow" | "medium" | "full";
+  /** Empty means automatic. */
+  background: string;
+  text: string;
+}
+
+export const DEFAULT_THEME: Theme = {
+  accent: DEFAULT_ACCENT, mode: "auto", radius: "md", font: "system", size: "md", density: "comfortable", surface: "card",
+  field: "filled", button: "solid", buttonFull: false, width: "medium", background: "", text: "",
+};
+
+/** One-click starting looks. Each is a complete theme, so choosing one replaces every appearance setting. */
+export const PRESETS: { id: string; name: string; theme: Theme }[] = [
+  { id: "clean", name: "Clean", theme: DEFAULT_THEME },
+  { id: "midnight", name: "Midnight", theme: { ...DEFAULT_THEME, accent: "#8b9cff", mode: "dark", radius: "lg", surface: "raised" } },
+  { id: "paper", name: "Paper", theme: { ...DEFAULT_THEME, accent: "#8a4b2a", mode: "light", radius: "sm", font: "serif", field: "underline", button: "outline", background: "#faf6ee", text: "#2b2118" } },
+  { id: "mint", name: "Mint", theme: { ...DEFAULT_THEME, accent: "#0b7a75", mode: "light", radius: "lg", font: "rounded", surface: "flat", background: "#eef8f6" } },
+  { id: "bold", name: "Bold", theme: { ...DEFAULT_THEME, accent: "#d95926", radius: "none", size: "lg", density: "spacious", field: "outline", buttonFull: true } },
+  { id: "mono", name: "Mono", theme: { ...DEFAULT_THEME, accent: "#111827", mode: "light", radius: "none", font: "mono", field: "outline", button: "outline", surface: "card", size: "sm" } },
+];
 
 export const emptyQuestion = (): QuestionState => ({ show: true, label: "", help: "", value: "" });
 
 export function initialState(pack: string, scenario: string): WidgetState {
   return {
     pack, scenario, jurisdictions: [], questions: {},
-    theme: { accent: DEFAULT_ACCENT, mode: "auto", radius: "md" },
+    theme: { ...DEFAULT_THEME },
     copy: { title: "", intro: "", submit: "Check", brand: true, schemaHelp: false },
     result: { actions: true, reasons: true },
   };
@@ -41,9 +74,14 @@ export function buildConfig(s: WidgetState, allJurisdictions: string[]): Record<
   }
   if (Object.keys(questions).length) c.questions = questions;
   const theme: Record<string, string> = {};
-  if (s.theme.accent.toLowerCase() !== DEFAULT_ACCENT) theme.accent = s.theme.accent;
-  if (s.theme.mode !== "auto") theme.mode = s.theme.mode;
-  if (s.theme.radius !== "md") theme.radius = s.theme.radius;
+  const t = { ...DEFAULT_THEME, ...s.theme };
+  for (const k of ["mode", "radius", "font", "size", "density", "surface", "field", "button", "width"] as const) {
+    if (t[k] !== DEFAULT_THEME[k]) theme[k] = t[k];
+  }
+  if (t.accent.toLowerCase() !== DEFAULT_ACCENT) theme.accent = t.accent;
+  if (t.buttonFull) theme.buttonWidth = "full";
+  if (t.background) theme.background = t.background;
+  if (t.text) theme.text = t.text;
   if (Object.keys(theme).length) c.theme = theme;
   const copy: Record<string, string | boolean> = {};
   if (s.copy.title.trim()) copy.title = s.copy.title.trim();

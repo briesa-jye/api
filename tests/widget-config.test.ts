@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildConfig, checkWidget, embedSnippet, escapeAttr, initialState, type KeyChoice, type WidgetState } from "../apps/web/src/lib/widget-config.ts";
+import { PRESETS, DEFAULT_THEME, buildConfig, checkWidget, embedSnippet, escapeAttr, initialState, type KeyChoice, type WidgetState } from "../apps/web/src/lib/widget-config.ts";
 import type { Field } from "../apps/web/src/lib/schema-fields.ts";
 
 const ALL = ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"];
@@ -18,14 +20,14 @@ describe("widget config", () => {
     const t: WidgetState = {
       ...s, jurisdictions: ["NSW", "QLD", "XX"],
       questions: { arose_from_work: { show: false, label: "ignored when hidden", help: "", value: "true" }, incident_type: { show: true, label: " What happened? ", help: "", value: "stale" }, note: { show: true, label: "", help: "", value: "" } },
-      theme: { accent: "#0B7A75", mode: "dark", radius: "lg" },
+      theme: { ...s.theme, accent: "#0B7A75", mode: "dark", radius: "lg", font: "serif", buttonFull: true, background: "#101820" },
       copy: { title: "Is it notifiable?", intro: "", submit: "Check", brand: false, schemaHelp: true },
       result: { actions: false, reasons: true },
     };
     expect(buildConfig(t, ALL)).toEqual({
       pack: "whs", scenario: "classify", jurisdictions: ["NSW", "QLD"],
       questions: { arose_from_work: { show: false, value: "true" }, incident_type: { label: "What happened?" } }, // a shown question never carries a stale hidden answer
-      theme: { accent: "#0B7A75", mode: "dark", radius: "lg" },
+      theme: { accent: "#0B7A75", mode: "dark", radius: "lg", font: "serif", buttonWidth: "full", background: "#101820" },
       copy: { title: "Is it notifiable?", brand: false, schemaHelp: true }, result: { actions: false },
     });
     expect(buildConfig({ ...s, jurisdictions: ALL }, ALL).jurisdictions).toBeUndefined(); // all selected is the same as the default
@@ -57,5 +59,26 @@ describe("widget config", () => {
     expect(msgs(checkWidget({ state: s, fields, packStatus: "draft", key: key() }), "info")).toMatch(/pack is draft/);
     expect(checkWidget({ state: s, fields, packStatus: "verified", key: key() })).toEqual([]);
     expect(msgs(checkWidget({ state: s, fields, packStatus: "verified", key: key({ mode: "test" }) }), "info")).toMatch(/test key/);
+  });
+});
+
+describe("appearance presets", () => {
+  const widgetModule: { exports: any } = { exports: {} };
+  new Function("module", readFileSync(resolve(import.meta.dirname, "../apps/web/public/widget/v1.js"), "utf8"))(widgetModule);
+  const W = widgetModule.exports;
+
+  it("every preset is complete, and the widget reads back exactly the look the builder wrote", () => {
+    expect(PRESETS.map((p) => p.id)).toEqual(["clean", "midnight", "paper", "mint", "bold", "mono"]);
+    for (const p of PRESETS) {
+      expect(Object.keys(p.theme).sort()).toEqual(Object.keys(DEFAULT_THEME).sort());
+      const written = buildConfig({ ...initialState("whs", "classify"), theme: p.theme }, ALL);
+      const read = W.sanitizeConfig(written).theme;
+      const { buttonFull, ...rest } = p.theme;
+      expect(read).toEqual({ ...rest, buttonWidth: buttonFull ? "full" : "auto" });
+    }
+  });
+
+  it("the Clean preset is the widget's own default, so it adds nothing to the snippet", () => {
+    expect(buildConfig({ ...initialState("whs", "classify"), theme: PRESETS[0]!.theme }, ALL).theme).toBeUndefined();
   });
 });

@@ -25,7 +25,7 @@ function loadWidget(): Promise<WidgetApi> {
  * The real widget, running against the in-browser rule engine instead of the API. So the preview works with no key, no site and no
  * network, and shows exactly the widget a visitor would get (the rules are the same assessCore the API runs).
  */
-export function WidgetPreview({ pack, scenario, config, dark }: { pack: LivePack; scenario: LiveScenario; config: Record<string, unknown>; dark: boolean }) {
+export function WidgetPreview({ pack, scenario, config }: { pack: LivePack; scenario: LiveScenario; config: Record<string, unknown> }) {
   const ref = useRef<HTMLDivElement>(null);
   const configJson = JSON.stringify(config);
   const transport = useMemo(() => ({
@@ -45,19 +45,23 @@ export function WidgetPreview({ pack, scenario, config, dark }: { pack: LivePack
     },
   }), [pack, scenario]);
 
+  // The old widget stays on screen until the new one is ready to replace it, so tweaking a setting does not flash blank.
+  const current = useRef<{ destroy(): void } | null>(null);
   useEffect(() => {
-    let widget: { destroy(): void } | null = null;
     let cancelled = false;
     // quiet: the builder's Checks panel already says what is wrong, so the widget need not also log it.
     const t = setTimeout(() => {
-      loadWidget().then((api) => { if (!cancelled && ref.current) widget = api.mount(ref.current, JSON.parse(configJson), { transport, quiet: true }); }).catch(() => {});
-    }, 200); // wait for typing to settle
-    return () => { cancelled = true; clearTimeout(t); widget?.destroy(); };
+      loadWidget().then((api) => {
+        if (cancelled || !ref.current) return;
+        current.current?.destroy();
+        current.current = api.mount(ref.current, JSON.parse(configJson), { transport, quiet: true });
+      }).catch(() => {});
+    }, 150); // wait for typing to settle
+    return () => { cancelled = true; clearTimeout(t); };
   }, [configJson, transport]);
+  useEffect(() => () => { current.current?.destroy(); current.current = null; }, []);
 
   return (
-    <div className={`rounded-xl border p-4 transition-colors sm:p-6 ${dark ? "bg-[#0e0e12]" : "bg-white"}`}>
-      <div ref={ref} />
-    </div>
+    <div ref={ref} />
   );
 }

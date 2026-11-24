@@ -33,7 +33,7 @@ The snippet's `data-briesa-config` holds a JSON object. The builder writes it fo
 | `pack`, `scenario` | Which pack and scenario type to ask about. Required. |
 | `jurisdictions` | States and territories visitors may pick, such as `["NSW","QLD"]`. With one, visitors are not asked. Default: all the pack covers. |
 | `questions` | Per question, keyed by its path: `show` (false hides it), `label`, `help`, and `value` (the answer to use for a hidden question). A required question that is hidden must have a `value`, otherwise the widget shows "This tool is not available on this page" and says why in the console. |
-| `theme` | `accent` (a hex colour), `mode` (`auto` follows the visitor's light or dark setting, or `light` / `dark`) and `radius` (`none`, `sm`, `md`, `lg`). |
+| `theme` | Appearance. `accent`, `background` and `text` are hex colours (the last two default to automatic). `mode`: `auto`, `light`, `dark`. `radius`: `none`, `sm`, `md`, `lg`. `font`: `system`, `serif`, `rounded`, `mono`. `size`: `sm`, `md`, `lg`. `density`: `compact`, `comfortable`, `spacious`. `surface`: `card`, `flat`, `raised`. `field`: `filled`, `outline`, `underline`. `button`: `solid`, `outline`, `soft`; `buttonWidth`: `auto`, `full`. `width`: `narrow`, `medium`, `full`. Anything else falls back to the default, and button text is always chosen to be readable on your accent. The builder writes only the settings that differ from the defaults. |
 | `copy` | `title`, `intro`, `submit` (button text), `brand` (false hides "Powered by Briesa") and `schemaHelp` (true shows the pack's built-in help text, which is written for developers and off by default). |
 | `result` | `actions` and `reasons`: set either to false to hide that section. |
 
