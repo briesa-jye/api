@@ -93,3 +93,15 @@ Defaults chosen by the build, as agreed with Jye. Change any of these before pro
 - **The full publishable key is stored** (they are public by design) so the dashboard can show and copy it again. Secret keys remain hash-only and are shown once.
 - **Per-visitor limits need the real client IP.** Set `CLIENT_IP_HEADER` to a header your proxy sets and clients cannot forge (Fly.io: `fly-client-ip`, set in `fly.toml`). Without it the connection address is used, which behind a proxy is the proxy.
 - **Monthly caps** are counted per process and seeded from the database, which is exact for the single machine this runs on. With several instances each would over-count slightly less than the cap; move the count to the database or Redis if the API is scaled out.
+
+## TypeScript SDK (`packages/sdk`)
+
+- **Types are generated, not written.** `scripts/generate.ts` turns `docs/openapi.json` into `src/generated/schema.ts`; a test fails if the file is stale, and another checks that real responses contain every field the document says is always present. Building the SDK exposed that most response schemas never declared `required`, so the OpenAPI builder now does (every response view returns every field, with null for "none").
+- **Names match the API** (`scenario_type`, `as_of`), with no camelCase translation, so the reference, the playground's sample code and the SDK all read the same.
+- **Retries follow what is safe, not what is convenient.** `assess` always carries an Idempotency-Key reused across retries. Key and webhook creation (which the API does not deduplicate) are never repeated after a failure that might have been processed, only after a `429 rate_limited`, which is refused before any work. A monthly cap is never retried.
+- **No custom headers.** The API's CORS preflight allows `Authorization`, `Content-Type` and `Idempotency-Key` only, so the SDK sends exactly those and works from a browser unchanged. This means no User-Agent or SDK-version header.
+- **Browser guard.** A `bk_` key in a browser throws unless `dangerouslyAllowBrowser`, mirroring the API's own refusal.
+- **ESM only, no dependencies;** webhook verification uses Web Crypto, which edge runtimes also provide. Only Node and a browser-like environment are in the test suite.
+- **`baseUrl` defaults to the current production host** (`briesa-api.fly.dev`). When a custom domain is connected, change `DEFAULT_BASE_URL` in a minor release; everyone who sets `baseUrl` is unaffected.
+- **Not published.** The package is `private` with `UNLICENSED` so it cannot be published by accident. To publish: pick the npm scope and name (the name `@briesa/sdk` needs an npm org called `briesa`), set a licence, remove `"private": true`, then `corepack pnpm sdk:build && cd packages/sdk && npm publish --access public`. Do this once the API's version number and the DEFAULT_BASE_URL are settled.
+

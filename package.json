@@ -12,7 +12,9 @@
     "docs:generate": "node scripts/generate-docs.ts",
     "tenant:create": "node scripts/provision.ts",
     "db:migrate": "corepack pnpm --filter @briesa/db exec prisma migrate deploy",
-    "db:generate": "corepack pnpm --filter @briesa/db exec prisma generate"
+    "db:generate": "corepack pnpm --filter @briesa/db exec prisma generate",
+    "sdk:generate": "node packages/sdk/scripts/generate.ts",
+    "sdk:build": "corepack pnpm --filter @briesa/sdk build"
   },
   "devDependencies": {
     "@briesa/accounts": "workspace:*",
@@ -26,6 +28,7 @@
     "@scalar/openapi-parser": "^0.29.26",
     "@types/node": "^24",
     "jsdom": "^26.1.0",
+    "openapi-typescript": "^7.13.0",
     "pglite-prisma-adapter": "^0.7.2",
     "stripe": "^19.3.0",
     "typescript": "^5.9",
