@@ -26,7 +26,7 @@
     "@electric-sql/pglite": "^0.5.17",
     "@prisma/client": "^6.19.3",
     "@scalar/openapi-parser": "^0.29.26",
-    "@types/node": "^24",
+    "@types/node": "^26",
     "jsdom": "^26.1.0",
     "openapi-typescript": "^7.13.0",
     "pglite-prisma-adapter": "^0.7.2",
