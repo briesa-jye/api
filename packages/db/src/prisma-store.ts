@@ -2,7 +2,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { FINISHED_DELIVERY_TTL_MS, IDEMPOTENCY_PENDING_MS, IDEMPOTENCY_TTL_MS } from "./types.ts";
 import type {
-  ApiKeyRecord, AuditInput, AuditListQuery, AuditRecord, AuditStatRow, IdempotencyClaim, IdempotencyRecord, KeyMode, PurgeResult, Store, Tenant, UsageEvent, UsageSummaryRow,
+  ApiKeyRecord, ApiKeyUpdate, AuditInput, AuditListQuery, AuditRecord, AuditStatRow, IdempotencyClaim, IdempotencyRecord, KeyKind, KeyMode, NewApiKey, PurgeResult, Store, Tenant, UsageEvent, UsageSummaryRow,
   WebhookDelivery, WebhookEndpoint, WebhookEvent, TenantBillingPatch, TenantMember,
 } from "./types.ts";
 
@@ -15,7 +15,7 @@ const utc = (d: Date) => Prisma.sql`(${d.toISOString()}::timestamptz AT TIME ZON
 const json = (v: unknown) => (v === undefined || v === null ? Prisma.JsonNull : (v as Prisma.InputJsonValue));
 const isUnique = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
 
-const toKey = (k: { mode: string } & Omit<ApiKeyRecord, "mode">): ApiKeyRecord => ({ ...k, mode: k.mode as KeyMode });
+const toKey = (k: { mode: string; kind: string } & Omit<ApiKeyRecord, "mode" | "kind">): ApiKeyRecord => ({ ...k, mode: k.mode as KeyMode, kind: k.kind as KeyKind });
 const toEndpoint = (e: { events: string[] } & Omit<WebhookEndpoint, "events">): WebhookEndpoint => ({ ...e, events: e.events as WebhookEvent[] });
 const toDelivery = (d: { event: string; status: string } & Omit<WebhookDelivery, "event" | "status">): WebhookDelivery =>
   ({ ...d, event: d.event as WebhookEvent, status: d.status as WebhookDelivery["status"] });
@@ -95,8 +95,18 @@ export class PrismaStore implements Store {
   }
 
   // --- api keys
-  async createApiKey(input: Omit<ApiKeyRecord, "id" | "createdAt" | "revokedAt">) {
+  async createApiKey(input: NewApiKey) {
     return toKey(await this.db.apiKey.create({ data: input }));
+  }
+  async updateApiKey(tenantId: string, keyId: string, patch: ApiKeyUpdate) {
+    const data = { ...(patch.name !== undefined && { name: patch.name }), ...(patch.allowedOrigins !== undefined && { allowedOrigins: patch.allowedOrigins }), ...(patch.monthlyCap !== undefined && { monthlyCap: patch.monthlyCap }), ...(patch.rateLimitPerMinute !== undefined && { rateLimitPerMinute: patch.rateLimitPerMinute }) };
+    const { count } = await this.db.apiKey.updateMany({ where: { id: keyId, tenantId, revokedAt: null }, data });
+    if (count === 0) return null;
+    const k = await this.db.apiKey.findFirst({ where: { id: keyId, tenantId } });
+    return k ? toKey(k) : null;
+  }
+  countKeyUsage(tenantId: string, keyId: string, month: string) {
+    return this.db.usageEvent.count({ where: { tenantId, keyId, month } });
   }
   async findApiKeyByPrefix(prefix: string) {
     const k = await this.db.apiKey.findUnique({ where: { prefix } });

@@ -33,6 +33,9 @@ export interface TenantMember {
   createdAt: Date;
 }
 
+/** secret: server-side bearer key. publishable: safe in a browser widget, locked to allowed origins and a few routes. */
+export type KeyKind = "secret" | "publishable";
+
 export interface ApiKeyRecord {
   id: string;
   tenantId: string;
@@ -45,6 +48,24 @@ export interface ApiKeyRecord {
   createdAt: Date;
   revokedAt: Date | null;
   rotatedFromId: string | null;
+  kind: KeyKind;
+  /** Publishable keys only: the exact origins (or https://*.example.com) allowed to use the key from a browser. */
+  allowedOrigins: string[];
+  /** Most billable calls this key may make in a calendar month, or null for no cap. */
+  monthlyCap: number | null;
+  /** The full key, kept only for publishable keys (they are public by design) so the dashboard can show it again. */
+  publicKey: string | null;
+}
+
+/** What a caller supplies to create a key. The new fields default to a plain secret key. */
+export type NewApiKey = Omit<ApiKeyRecord, "id" | "createdAt" | "revokedAt" | "kind" | "allowedOrigins" | "monthlyCap" | "publicKey">
+  & Partial<Pick<ApiKeyRecord, "kind" | "allowedOrigins" | "monthlyCap" | "publicKey">>;
+
+export interface ApiKeyUpdate {
+  name?: string;
+  allowedOrigins?: string[];
+  monthlyCap?: number | null;
+  rateLimitPerMinute?: number;
 }
 
 export interface UsageEvent {
@@ -183,7 +204,11 @@ export interface Store {
    */
   eraseTenantData(tenantId: string): Promise<PurgeResult>;
 
-  createApiKey(input: Omit<ApiKeyRecord, "id" | "createdAt" | "revokedAt">): Promise<ApiKeyRecord>;
+  createApiKey(input: NewApiKey): Promise<ApiKeyRecord>;
+  /** Changes the editable settings of an active key. Null when there is no active key with that id in the tenant. */
+  updateApiKey(tenantId: string, keyId: string, patch: ApiKeyUpdate): Promise<ApiKeyRecord | null>;
+  /** Billable calls this key has made in `month` (YYYY-MM). */
+  countKeyUsage(tenantId: string, keyId: string, month: string): Promise<number>;
   findApiKeyByPrefix(prefix: string): Promise<ApiKeyRecord | null>;
   listApiKeys(tenantId: string): Promise<ApiKeyRecord[]>;
   revokeApiKey(tenantId: string, keyId: string): Promise<ApiKeyRecord | null>;

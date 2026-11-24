@@ -44,6 +44,10 @@ model ApiKey {
   createdAt          DateTime  @default(now())
   revokedAt          DateTime?
   rotatedFromId      String?
+  kind               String    @default("secret") // "secret" | "publishable"
+  allowedOrigins     String[]  @default([])
+  monthlyCap         Int?
+  publicKey          String?
 
   @@index([tenantId])
 }

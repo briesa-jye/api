@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { FINISHED_DELIVERY_TTL_MS, IDEMPOTENCY_PENDING_MS, IDEMPOTENCY_TTL_MS } from "./types.ts";
 import type {
-  ApiKeyRecord, AuditInput, AuditListQuery, AuditRecord, AuditStatRow, IdempotencyClaim, IdempotencyRecord, Store, Tenant, UsageEvent, UsageSummaryRow,
+  ApiKeyRecord, ApiKeyUpdate, AuditInput, AuditListQuery, AuditRecord, AuditStatRow, IdempotencyClaim, IdempotencyRecord, NewApiKey, Store, Tenant, UsageEvent, UsageSummaryRow,
   WebhookDelivery, WebhookEndpoint, WebhookEvent, PurgeResult, TenantBillingPatch, TenantMember,
 } from "./types.ts";
 
@@ -89,11 +89,23 @@ export class MemoryStore implements Store {
     return { audit: before.audit - this.audits.length, idempotency: before.idempotency - this.idem.length, deliveries: before.deliveries - this.deliveries.length };
   }
 
-  async createApiKey(input: Omit<ApiKeyRecord, "id" | "createdAt" | "revokedAt">) {
+  async createApiKey(input: NewApiKey) {
     if ([...this.keys.values()].some((x) => x.prefix === input.prefix)) throw new Error("duplicate key prefix"); // mirrors the database unique constraint
-    const k: ApiKeyRecord = { ...input, id: randomUUID(), createdAt: new Date(), revokedAt: null };
+    const k: ApiKeyRecord = { kind: "secret", allowedOrigins: [], monthlyCap: null, publicKey: null, ...input, id: randomUUID(), createdAt: new Date(), revokedAt: null };
     this.keys.set(k.id, k);
     return k;
+  }
+  async updateApiKey(tenantId: string, keyId: string, patch: ApiKeyUpdate) {
+    const k = this.keys.get(keyId);
+    if (!k || k.tenantId !== tenantId || k.revokedAt) return null;
+    if (patch.name !== undefined) k.name = patch.name;
+    if (patch.allowedOrigins !== undefined) k.allowedOrigins = [...patch.allowedOrigins];
+    if (patch.monthlyCap !== undefined) k.monthlyCap = patch.monthlyCap;
+    if (patch.rateLimitPerMinute !== undefined) k.rateLimitPerMinute = patch.rateLimitPerMinute;
+    return { ...k, allowedOrigins: [...k.allowedOrigins] };
+  }
+  async countKeyUsage(tenantId: string, keyId: string, month: string) {
+    return this.usage.filter((e) => e.tenantId === tenantId && e.keyId === keyId && e.month === month).length;
   }
   async findApiKeyByPrefix(prefix: string) {
     return [...this.keys.values()].find((k) => k.prefix === prefix) ?? null;

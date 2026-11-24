@@ -47,6 +47,31 @@ for (const f of storeFactories) {
       await expect(store.createApiKey(key(B, "aaaaaaaaaa"))).rejects.toThrow();
     });
 
+    it("api keys: new keys default to secret; publishable fields round trip; updates are tenant-scoped and skip revoked keys", async () => {
+      const plain = await store.createApiKey(key(A, "pppppppppp"));
+      expect(plain).toMatchObject({ kind: "secret", allowedOrigins: [], monthlyCap: null, publicKey: null });
+      const pk = await store.createApiKey({ ...key(A, "qqqqqqqqqq"), kind: "publishable", allowedOrigins: ["https://a.example.com", "https://*.b.example.com"], monthlyCap: 500, publicKey: "pk_test_qqqqqqqqqq_x" });
+      expect((await store.findApiKeyByPrefix("qqqqqqqqqq"))).toMatchObject({ kind: "publishable", allowedOrigins: ["https://a.example.com", "https://*.b.example.com"], monthlyCap: 500, publicKey: "pk_test_qqqqqqqqqq_x" });
+      expect(await store.updateApiKey(B, pk.id, { name: "hijack" })).toBeNull(); // another tenant cannot change it
+      const u = await store.updateApiKey(A, pk.id, { name: "site", allowedOrigins: ["https://c.example.com"], monthlyCap: 10, rateLimitPerMinute: 20 });
+      expect(u).toMatchObject({ name: "site", allowedOrigins: ["https://c.example.com"], monthlyCap: 10, rateLimitPerMinute: 20, kind: "publishable" });
+      expect((await store.updateApiKey(A, pk.id, { monthlyCap: null }))?.monthlyCap).toBeNull();
+      expect((await store.updateApiKey(A, pk.id, { name: "only name" }))?.allowedOrigins).toEqual(["https://c.example.com"]); // untouched fields stay
+      await store.revokeApiKey(A, pk.id);
+      expect(await store.updateApiKey(A, pk.id, { name: "late" })).toBeNull(); // revoked keys are final
+      expect(await store.updateApiKey(A, "nope", { name: "x" })).toBeNull();
+    });
+
+    it("usage: countKeyUsage counts one key's calls in one month for one tenant", async () => {
+      const use = (tenantId: string, keyId: string, month: string) => store.recordUsage({ tenantId, keyId, packId: "p", endpoint: "assess", test: false, month });
+      await use(A, "k1", "2026-11"); await use(A, "k1", "2026-11"); await use(A, "k2", "2026-11"); await use(A, "k1", "2026-10"); await use(B, "k1", "2026-11");
+      expect(await store.countKeyUsage(A, "k1", "2026-11")).toBe(2);
+      expect(await store.countKeyUsage(A, "k2", "2026-11")).toBe(1);
+      expect(await store.countKeyUsage(A, "k1", "2026-10")).toBe(1);
+      expect(await store.countKeyUsage(A, "k1", "2026-09")).toBe(0);
+      expect(await store.countKeyUsage(B, "k2", "2026-11")).toBe(0);
+    });
+
     it("usage: grouped by pack, endpoint and test flag; scoped by tenant and month", async () => {
       const u = (tenantId: string, over: object = {}) => store.recordUsage({ tenantId, keyId: "k", packId: "p1", endpoint: "assess", test: false, month: "2026-11", ...over });
       await u(A); await u(A); await u(A, { test: true }); await u(A, { packId: null }); await u(A, { month: "2026-10" }); await u(B);
