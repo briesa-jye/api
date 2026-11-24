@@ -28,7 +28,7 @@
     "jsdom": "^26.1.0",
     "pglite-prisma-adapter": "^0.7.2",
     "stripe": "^19.3.0",
-    "typescript": "^5.9",
+    "typescript": "^7.0",
     "vitest": "^4.1.12"
   }
 }
