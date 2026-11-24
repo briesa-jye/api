@@ -5,12 +5,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/input";
 
-export function OneTimeSecret({ secret, label, kind }: { secret: string; label: string; kind: "API key" | "signing secret" }) {
+export function OneTimeSecret({ secret, label, kind, publishable }: { secret: string; label: string; kind: "API key" | "signing secret"; /** A publishable key is public by design and stays visible in the keys list. */ publishable?: boolean }) {
   const [copied, setCopied] = useState(false);
   return (
     <Notice tone="success" className="space-y-3">
       <p>
-        <strong className="text-foreground">{kind} for {label}.</strong> Copy it now. It is shown once and cannot be retrieved again.
+        <strong className="text-foreground">{publishable ? "Publishable key" : kind} for {label}.</strong>{" "}{publishable ? "It is safe to put in your web page, and you can copy it again from the list below." : "Copy it now. It is shown once and cannot be retrieved again."}
       </p>
       <div className="flex items-center gap-2">
         <code className="bg-background/60 min-w-0 flex-1 overflow-x-auto rounded-md border px-3 py-2 font-mono text-xs whitespace-nowrap">{secret}</code>

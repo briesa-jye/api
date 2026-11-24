@@ -1,7 +1,7 @@
 "use server";
 
 import { liveAccessAllowed } from "@briesa/accounts/billing";
-import { createKey, createKeyInput, createWebhook, createWebhookInput, ManageError, revokeKey, rotateKey, zodMessage } from "@briesa/accounts/manage";
+import { createKey, createKeyInput, createWebhook, createWebhookInput, ManageError, revokeKey, rotateKey, updateKey, updateKeyInput, zodMessage } from "@briesa/accounts/manage";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAccount, getPlans } from "@/lib/account";
@@ -10,7 +10,7 @@ import { SITE_URL } from "@/lib/site";
 import { getStore } from "@/lib/store";
 import { getStripe, stripeConfigured } from "@/lib/stripe";
 
-export type SecretResult = { ok: true; secret: string; label: string } | { ok: false; error: string } | null;
+export type SecretResult = { ok: true; secret: string; label: string; publishable?: boolean } | { ok: false; error: string } | null;
 
 const fail = (e: unknown): { ok: false; error: string } => {
   if (e instanceof ManageError) return { ok: false, error: e.message };
@@ -18,17 +18,40 @@ const fail = (e: unknown): { ok: false; error: string } => {
   return { ok: false, error: "Something went wrong. Please try again." };
 };
 
+/** One origin per line (commas also work). */
+const lines = (v: FormDataEntryValue | null) => String(v ?? "").split(/[\n,]+/).map((x) => x.trim()).filter(Boolean);
+const capOf = (v: FormDataEntryValue | null) => { const t = String(v ?? "").trim(); return t === "" ? undefined : Number(t); };
+
 export async function createKeyAction(_: SecretResult, form: FormData): Promise<SecretResult> {
   const { tenant } = await requireAccount();
   const mode = form.get("mode") === "live" ? "live" : "test";
   const packs = form.getAll("packs").map(String);
-  const scopes = [...form.getAll("scopes").map(String), ...(packs.includes("*") ? ["pack:*"] : packs.map((p) => `pack:${p}`))];
-  const parsed = createKeyInput.safeParse({ name: String(form.get("name") ?? "").trim(), mode, scopes });
+  const name = String(form.get("name") ?? "").trim();
+  const publishable = form.get("kind") === "publishable";
+  const parsed = publishable
+    // A publishable key never gets a wildcard pack or admin scopes: only assess, read, and the packs named here.
+    ? createKeyInput.safeParse({ name, mode, kind: "publishable", scopes: ["assess", "read", ...packs.filter((p) => p !== "*").map((p) => `pack:${p}`)], allowed_origins: lines(form.get("origins")), ...(capOf(form.get("cap")) !== undefined && { monthly_cap: capOf(form.get("cap")) }) })
+    : createKeyInput.safeParse({ name, mode, scopes: [...form.getAll("scopes").map(String), ...(packs.includes("*") ? ["pack:*"] : packs.map((p) => `pack:${p}`))] });
   if (!parsed.success) return { ok: false, error: zodMessage(parsed.error) };
   try {
     const { key } = await createKey(getStore(), ownerActor(tenant, mode), parsed.data);
     revalidatePath("/dashboard", "layout");
-    return { ok: true, secret: key, label: parsed.data.name };
+    return { ok: true, secret: key, label: parsed.data.name, ...(publishable && { publishable: true }) };
+  } catch (e) { return fail(e); }
+}
+
+export type UpdateResult = { ok: true } | { ok: false; error: string } | null;
+
+/** Edits a publishable key's allowed sites and monthly cap. The id is bound in, so each row has its own small form. */
+export async function updateKeyAction(id: string, _prev: UpdateResult, form: FormData): Promise<UpdateResult> {
+  const { tenant } = await requireAccount();
+  const cap = capOf(form.get("cap"));
+  const parsed = updateKeyInput.safeParse({ allowed_origins: lines(form.get("origins")), ...(cap !== undefined && { monthly_cap: cap }) });
+  if (!parsed.success) return { ok: false, error: zodMessage(parsed.error) };
+  try {
+    await updateKey(getStore(), tenant.id, id, parsed.data);
+    revalidatePath("/dashboard/keys");
+    return { ok: true };
   } catch (e) { return fail(e); }
 }
 
